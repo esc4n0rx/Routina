@@ -114,8 +114,8 @@ export const authService = {
       const response = await apiRequest<AuthResponse>('/api/usuarios/login', 'POST', credentials);
       
       if (!response.erro && response.token) {
-        // Armazenar token no localStorage
-        localStorage.setItem('routina_token', response.token);
+        // Armazenar token em cookie seguro (7 dias de expiração)
+        document.cookie = `routina_token=${response.token}; path=/; max-age=604800; SameSite=Strict`;
         // Armazenar usuário no localStorage
         localStorage.setItem('routina_user', JSON.stringify(response.usuario));
       }
@@ -139,7 +139,8 @@ export const authService = {
   // Validar token do usuário
   async validateToken(): Promise<AuthResponse> {
     try {
-      const token = localStorage.getItem('routina_token');
+      // Obter token do cookie
+      const token = this.getTokenFromCookie();
       
       if (!token) {
         throw new Error('Token não encontrado');
@@ -152,6 +153,18 @@ export const authService = {
       this.logout();
       throw error;
     }
+  },
+  
+  // Obter token do cookie
+  getTokenFromCookie(): string | null {
+    const cookies = document.cookie.split(';');
+    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('routina_token='));
+    
+    if (tokenCookie) {
+      return tokenCookie.split('=')[1];
+    }
+    
+    return null;
   },
   
   // Obter usuário atual
@@ -167,12 +180,13 @@ export const authService = {
   
   // Verificar se o usuário está autenticado
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('routina_token');
+    return !!this.getTokenFromCookie();
   },
   
   // Logout de usuário
   logout(): void {
-    localStorage.removeItem('routina_token');
+    // Remover cookie do token
+    document.cookie = 'routina_token=; path=/; max-age=0; SameSite=Strict';
     localStorage.removeItem('routina_user');
   }
 };

@@ -1,13 +1,62 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { CheckCircle2, Clock, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { getRecentTasks } from "@/lib/api"
+
+// Dados fictícios para demonstração
+const mockTasks = [
+  {
+    id: "task-1",
+    title: "Finalizar relatório mensal",
+    description: "Completar o relatório de desempenho para a reunião de equipe",
+    status: "pending",
+    priority: "high",
+    category: "Trabalho",
+    date: "2025-05-15T10:30:00",
+    dueDate: "2025-05-20T18:00:00",
+  },
+  {
+    id: "task-2",
+    title: "Treino de musculação",
+    description: "Foco em exercícios para as costas e bíceps",
+    status: "completed",
+    priority: "medium",
+    category: "Saúde",
+    date: "2025-05-15T08:00:00",
+  },
+  {
+    id: "task-3",
+    title: "Comprar mantimentos",
+    description: "Frutas, vegetais, proteínas e snacks saudáveis",
+    status: "pending",
+    priority: "medium",
+    category: "Pessoal",
+    date: "2025-05-16T14:00:00",
+    dueDate: "2025-05-16T20:00:00",
+  },
+  {
+    id: "task-4",
+    title: "Estudar para certificação",
+    description: "Revisar capítulos 5-8 e fazer exercícios práticos",
+    status: "pending",
+    priority: "high",
+    category: "Estudo",
+    date: "2025-05-14T19:00:00",
+    dueDate: "2025-05-25T23:59:00",
+  }
+];
 
 export function RecentTasks() {
-  const tasks = getRecentTasks()
+  const [tasks, setTasks] = useState(mockTasks);
+
+  // Na implementação real, buscaríamos tarefas recentes da API
+  useEffect(() => {
+    // Aqui ficaria a chamada para a API
+    // Por enquanto, usamos os dados mockados
+  }, []);
 
   return (
     <motion.div

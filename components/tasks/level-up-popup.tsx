@@ -4,29 +4,30 @@ import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Trophy, X, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getUserStats } from "@/lib/api"
 
 interface LevelUpPopupProps {
-  show: boolean
-  onClose: () => void
-  xpGained: number
-  initialLevel: number
-  initialXp: number
-  newLevel?: number
+  show: boolean;
+  onClose: () => void;
+  xpGained: number;
+  initialLevel: number;
+  initialXp: number;
+  newLevel?: number;
 }
 
 export function LevelUpPopup({ show, onClose, xpGained, initialLevel, initialXp, newLevel }: LevelUpPopupProps) {
   const [animationComplete, setAnimationComplete] = useState(false)
-  const stats = getUserStats()
   const isLevelUp = newLevel !== undefined && newLevel > initialLevel
 
-  // Calculate the percentage of XP before and after
-  const xpPercentBefore = (initialXp / stats.nextLevelXp) * 100
-  const xpPercentAfter = (((initialXp + xpGained) % stats.nextLevelXp) / stats.nextLevelXp) * 100
+  // Cálculo fictício de XP para o próximo nível
+  const nextLevelXp = 1000
+
+  // Calcular a porcentagem de XP antes e depois
+  const xpPercentBefore = (initialXp / nextLevelXp) * 100
+  const xpPercentAfter = (((initialXp + xpGained) % nextLevelXp) / nextLevelXp) * 100
 
   useEffect(() => {
     if (show) {
-      // Auto-close after 5 seconds
+      // Auto-close após 5 segundos
       const timer = setTimeout(() => {
         onClose()
       }, 5000)

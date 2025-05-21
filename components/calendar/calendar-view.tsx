@@ -6,13 +6,47 @@ import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { getCalendarEvents } from "@/lib/api"
+
+// Dados fictícios de eventos para demonstração
+const mockEvents = [
+  {
+    id: "event-1",
+    title: "Reunião de Equipe",
+    description: "Discussão sobre o progresso do projeto atual",
+    date: "2025-05-15T00:00:00",
+    time: "15:00 - 16:00",
+    type: "Trabalho",
+  },
+  {
+    id: "event-2",
+    title: "Entrega do Projeto",
+    description: "Prazo final para entrega do projeto XYZ",
+    date: "2025-05-18T00:00:00",
+    time: "23:59",
+    type: "Trabalho",
+  },
+  {
+    id: "event-3",
+    title: "Consulta Médica",
+    description: "Check-up anual",
+    date: "2025-05-22T00:00:00",
+    time: "10:30 - 11:30",
+    type: "Saúde",
+  },
+  {
+    id: "event-4",
+    title: "Aniversário de Maria",
+    description: "Não esquecer de comprar presente",
+    date: "2025-05-25T00:00:00",
+    time: "Todo o dia",
+    type: "Pessoal",
+  },
+];
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-
-  const events = getCalendarEvents()
+  const [events] = useState(mockEvents)
 
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
 

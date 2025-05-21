@@ -4,10 +4,21 @@ import { motion } from "framer-motion"
 import { Trophy, Zap, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { getUserStats } from "@/lib/api"
+import { useAuth } from "@/context/auth-context"
 
 export function DashboardStats() {
-  const stats = getUserStats()
+  const { user } = useAuth()
+
+  // Dados de estatística fictícios (na implementação real, viriam da API)
+  const stats = {
+    level: user?.nivel || 1,
+    xp: user?.pontos_xp || 0,
+    nextLevelXp: 1000, // Na implementação real, viria da API
+    tasksCompleted: 5, // Dados fictícios
+    tasksPending: 3,   // Dados fictícios
+    productivity: 75,  // Dados fictícios
+    productivityChange: 5 // Dados fictícios
+  }
 
   return (
     <motion.div

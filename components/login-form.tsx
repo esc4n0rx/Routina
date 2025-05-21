@@ -1,70 +1,59 @@
-"use client"
+'use client';
 
-import type React from "react"
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/hooks/use-toast"
-import { loginUser, registerUser } from "@/lib/api"
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { loginSchema, registerSchema, LoginFormValues, RegisterFormValues } from '@/lib/validations/auth';
+import { useAuth } from '@/context/auth-context';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 export function LoginForm() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
-  const [loginData, setLoginData] = useState({ email: "", password: "" })
-  const [registerData, setRegisterData] = useState({ name: "", email: "", password: "" })
+  const { login, register: registerUser, isLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>('login');
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  // Formulário de login
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      senha: '',
+    },
+  });
 
-    try {
-      const user = await loginUser(loginData.email, loginData.password)
-      toast({
-        title: "Login bem-sucedido!",
-        description: `Bem-vindo de volta, ${user.name}!`,
-      })
-      router.push("/dashboard")
-    } catch (error) {
-      toast({
-        title: "Erro ao fazer login",
-        description: "Verifique suas credenciais e tente novamente.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // Formulário de registro
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      nome: '',
+      email: '',
+      senha: '',
+      confirmarSenha: '',
+    },
+  });
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  // Manipuladores de submissão
+  const handleLogin = async (data: LoginFormValues) => {
+    await login(data.email, data.senha);
+  };
 
-    try {
-      await registerUser(registerData)
-      toast({
-        title: "Registro concluído!",
-        description: "Sua conta foi criada com sucesso. Faça login para continuar.",
-      })
-      // Switch to login tab
-      document.getElementById("login")?.click()
-    } catch (error) {
-      toast({
-        title: "Erro ao registrar",
-        description: "Não foi possível criar sua conta. Tente novamente.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const handleRegister = async (data: RegisterFormValues) => {
+    await registerUser(data.nome, data.email, data.senha);
+    // Após registrar com sucesso, muda para a aba de login
+    setActiveTab('login');
+    // Reseta o formulário de registro
+    registerForm.reset();
+  };
+
+  // Verifica se há algum formulário sendo enviado
+  const isSubmitting = loginForm.formState.isSubmitting || registerForm.formState.isSubmitting || isLoading;
 
   return (
     <motion.div
@@ -103,110 +92,179 @@ export function LoginForm() {
           <CardDescription className="text-center">Gerencie sua rotina e aumente sua produtividade</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger id="login" value="login">
-                Login
-              </TabsTrigger>
+              <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Registro</TabsTrigger>
             </TabsList>
+
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    required
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                    className="bg-background/50"
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            placeholder="seu@email.com"
+                            autoComplete="email"
+                            disabled={isSubmitting}
+                            className="bg-background/50"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Senha</Label>
-                    <Button variant="link" size="sm" className="px-0 text-xs">
-                      Esqueceu a senha?
-                    </Button>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    className="bg-background/50"
+
+                  <FormField
+                    control={loginForm.control}
+                    name="senha"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Senha</FormLabel>
+                          <Button variant="link" size="sm" className="px-0 text-xs h-auto" type="button">
+                            Esqueceu a senha?
+                          </Button>
+                        </div>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete="current-password"
+                            disabled={isSubmitting}
+                            className="bg-background/50"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-routina-purple to-routina-blue hover:from-routina-purple/90 hover:to-routina-blue/90"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Entrando...
-                    </>
-                  ) : (
-                    "Entrar"
-                  )}
-                </Button>
-              </form>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-routina-purple to-routina-blue hover:from-routina-purple/90 hover:to-routina-blue/90"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Entrando...
+                      </>
+                    ) : (
+                      "Entrar"
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </TabsContent>
+
             <TabsContent value="register">
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
-                  <Input
-                    id="name"
-                    placeholder="Seu nome"
-                    required
-                    value={registerData.name}
-                    onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                    className="bg-background/50"
+              <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                  <FormField
+                    control={registerForm.control}
+                    name="nome"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="Seu nome"
+                            autoComplete="name"
+                            disabled={isSubmitting}
+                            className="bg-background/50"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="register-email">Email</Label>
-                  <Input
-                    id="register-email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    required
-                    value={registerData.email}
-                    onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                    className="bg-background/50"
+
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            placeholder="seu@email.com"
+                            autoComplete="email"
+                            disabled={isSubmitting}
+                            className="bg-background/50"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="register-password">Senha</Label>
-                  <Input
-                    id="register-password"
-                    type="password"
-                    required
-                    value={registerData.password}
-                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                    className="bg-background/50"
+
+                  <FormField
+                    control={registerForm.control}
+                    name="senha"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel>Senha</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete="new-password"
+                            disabled={isSubmitting}
+                            className="bg-background/50"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-routina-purple to-routina-blue hover:from-routina-purple/90 hover:to-routina-blue/90"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Registrando...
-                    </>
-                  ) : (
-                    "Registrar"
-                  )}
-                </Button>
-              </form>
+
+                  <FormField
+                    control={registerForm.control}
+                    name="confirmarSenha"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel>Confirmar Senha</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete="new-password"
+                            disabled={isSubmitting}
+                            className="bg-background/50"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-routina-purple to-routina-blue hover:from-routina-purple/90 hover:to-routina-blue/90"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Registrando...
+                      </>
+                    ) : (
+                      "Registrar"
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -217,5 +275,5 @@ export function LoginForm() {
         </CardFooter>
       </Card>
     </motion.div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -9,13 +9,76 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
-import { getTasks, completeTask, deleteTask, getUserStats } from "@/lib/api"
 import { TaskForm } from "@/components/tasks/task-form"
 import { LevelUpPopup } from "@/components/tasks/level-up-popup"
+import { useAuth } from "@/context/auth-context"
+
+// Dados fictícios para demonstração
+const mockTasks = [
+  {
+    id: "task-1",
+    title: "Finalizar relatório mensal",
+    description: "Completar o relatório de desempenho para a reunião de equipe",
+    status: "pending",
+    priority: "high",
+    category: "Trabalho",
+    date: "2025-05-15T10:30:00",
+    dueDate: "2025-05-20T18:00:00",
+  },
+  {
+    id: "task-2",
+    title: "Treino de musculação",
+    description: "Foco em exercícios para as costas e bíceps",
+    status: "completed",
+    priority: "medium",
+    category: "Saúde",
+    date: "2025-05-15T08:00:00",
+  },
+  {
+    id: "task-3",
+    title: "Comprar mantimentos",
+    description: "Frutas, vegetais, proteínas e snacks saudáveis",
+    status: "pending",
+    priority: "medium",
+    category: "Pessoal",
+    date: "2025-05-16T14:00:00",
+    dueDate: "2025-05-16T20:00:00",
+  },
+  {
+    id: "task-4",
+    title: "Estudar para certificação",
+    description: "Revisar capítulos 5-8 e fazer exercícios práticos",
+    status: "pending",
+    priority: "high",
+    category: "Estudo",
+    date: "2025-05-14T19:00:00",
+    dueDate: "2025-05-25T23:59:00",
+  },
+  {
+    id: "task-5",
+    title: "Pagar contas mensais",
+    description: "Aluguel, luz, internet e cartão de crédito",
+    status: "urgent",
+    priority: "high",
+    category: "Finanças",
+    date: "2025-05-13T10:00:00",
+    dueDate: "2025-05-18T23:59:00",
+  },
+  {
+    id: "task-6",
+    title: "Ligar para o dentista",
+    description: "Agendar consulta de rotina",
+    status: "completed",
+    priority: "low",
+    category: "Saúde",
+    date: "2025-05-12T11:30:00",
+  }
+];
 
 export function TaskList() {
   const { toast } = useToast()
-  const [tasks, setTasks] = useState(getTasks())
+  const { user } = useAuth()
+  const [tasks, setTasks] = useState(mockTasks)
   const [showForm, setShowForm] = useState(false)
   const [editingTask, setEditingTask] = useState<any>(null)
   const [showLevelUpPopup, setShowLevelUpPopup] = useState(false)
@@ -28,31 +91,25 @@ export function TaskList() {
 
   const handleCompleteTask = (taskId: string) => {
     try {
-      completeTask(taskId)
-
-      // Update local state
+      // Atualiza o estado local
       setTasks(
         tasks.map((task) =>
           task.id === taskId ? { ...task, status: task.status === "completed" ? "pending" : "completed" } : task,
         ),
       )
 
-      // Get user stats for XP calculation
-      const stats = getUserStats()
-      const xpGained = 50 // XP gained for completing a task
-      const initialXp = stats.xp
-      const initialLevel = stats.level
-
-      // Calculate if user levels up
-      const totalXp = initialXp + xpGained
-      const xpForNextLevel = stats.nextLevelXp
-      let newLevel = undefined
-
-      if (totalXp >= xpForNextLevel) {
-        newLevel = initialLevel + 1
+      // Simulação de XP e level up
+      const xpGained = 50 // XP ganho por completar uma tarefa
+      const initialXp = user?.pontos_xp || 0
+      const initialLevel = user?.nivel || 1
+      const xpForNextLevel = 1000 // Valor fictício
+      
+      let newLevel = undefined;
+      if (initialXp + xpGained >= xpForNextLevel) {
+        newLevel = initialLevel + 1;
       }
 
-      // Show level up popup
+      // Mostra popup de level up
       setLevelUpData({
         xpGained,
         initialLevel,
@@ -60,6 +117,11 @@ export function TaskList() {
         newLevel,
       })
       setShowLevelUpPopup(true)
+      
+      toast({
+        title: "Tarefa atualizada",
+        description: "Status da tarefa atualizado com sucesso.",
+      })
     } catch (error) {
       toast({
         title: "Erro",
@@ -71,9 +133,7 @@ export function TaskList() {
 
   const handleDeleteTask = (taskId: string) => {
     try {
-      deleteTask(taskId)
-
-      // Update local state
+      // Atualiza o estado local
       setTasks(tasks.filter((task) => task.id !== taskId))
 
       toast({
@@ -116,7 +176,7 @@ export function TaskList() {
 
   const handleFormSubmit = (taskData: any) => {
     if (editingTask) {
-      // Update existing task
+      // Atualiza tarefa existente
       setTasks(tasks.map((task) => (task.id === editingTask.id ? { ...task, ...taskData } : task)))
 
       toast({
@@ -124,7 +184,7 @@ export function TaskList() {
         description: "A tarefa foi atualizada com sucesso.",
       })
     } else {
-      // Add new task
+      // Adiciona nova tarefa
       const newTask = {
         id: `task-${Date.now()}`,
         status: "pending",
@@ -282,7 +342,7 @@ export function TaskList() {
       <TaskForm open={showForm} onClose={handleFormClose} onSubmit={handleFormSubmit} initialData={editingTask} />
 
       <LevelUpPopup
-        open={showLevelUpPopup}
+        show={showLevelUpPopup}
         onClose={() => setShowLevelUpPopup(false)}
         xpGained={levelUpData.xpGained}
         initialLevel={levelUpData.initialLevel}
