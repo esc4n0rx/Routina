@@ -7,7 +7,14 @@ import { LayoutDashboard, CheckSquare, Calendar, Settings } from "lucide-react"
 export function Sidebar() {
   const pathname = usePathname()
 
-  const navItems = [
+  type NavItem = {
+    name: string
+    href: string
+    icon: React.ComponentType<any>
+    badge?: React.ReactNode
+  }
+
+  const navItems: NavItem[] = [
     {
       name: "Dashboard",
       href: "/dashboard",
