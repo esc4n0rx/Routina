@@ -12,15 +12,15 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
-import { getCurrentUser } from "@/lib/api"
+import { useAuth } from "@/context/auth-context"
 
 export function SettingsForm() {
   const { toast } = useToast()
-  const user = getCurrentUser()
+  const { user } = useAuth()
 
   const [formData, setFormData] = useState({
-    name: user.name,
-    email: user.email,
+    name: user?.nome ?? "",
+    email: user?.email ?? "",
     notifications: {
       email: true,
       push: true,
@@ -40,7 +40,7 @@ export function SettingsForm() {
     setFormData((prev) => ({
       ...prev,
       [section]: {
-        ...prev[section as keyof typeof prev],
+        ...((prev[section as keyof typeof prev] as object) ?? {}),
         [field]: value,
       },
     }))
@@ -79,8 +79,8 @@ export function SettingsForm() {
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex flex-col items-center gap-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src="/placeholder.svg?height=96&width=96" alt={user.name} />
-                    <AvatarFallback className="text-2xl">{user.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src="/placeholder.svg?height=96&width=96" alt={user?.nome} />
+                    <AvatarFallback className="text-2xl">{user?.nome.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <Button variant="outline" size="sm">
                     Alterar foto
@@ -117,20 +117,16 @@ export function SettingsForm() {
                 <h3 className="text-lg font-medium">Estatísticas</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="rounded-lg bg-muted/30 p-3 text-center">
-                    <div className="text-2xl font-bold">{user.stats.level}</div>
+                    <div className="text-2xl font-bold">{user?.nivel}</div>
                     <div className="text-xs text-muted-foreground">Nível</div>
                   </div>
                   <div className="rounded-lg bg-muted/30 p-3 text-center">
-                    <div className="text-2xl font-bold">{user.stats.xp}</div>
+                    <div className="text-2xl font-bold">{user?.pontos_xp}</div>
                     <div className="text-xs text-muted-foreground">XP Total</div>
                   </div>
                   <div className="rounded-lg bg-muted/30 p-3 text-center">
-                    <div className="text-2xl font-bold">{user.stats.tasksCompleted}</div>
-                    <div className="text-xs text-muted-foreground">Tarefas Concluídas</div>
-                  </div>
-                  <div className="rounded-lg bg-muted/30 p-3 text-center">
-                    <div className="text-2xl font-bold">{user.stats.streak}</div>
-                    <div className="text-xs text-muted-foreground">Dias Seguidos</div>
+                    <div className="text-2xl font-bold">{user?.sequencia}</div>
+                    <div className="text-xs text-muted-foreground">Sequencia</div>
                   </div>
                 </div>
               </div>
