@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 260 30% 12%;
+    --foreground: 0 0% 98%;
+
+    --card: 260 30% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 260 30% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 260 30% 20%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 260 30% 20%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 260 30% 20%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 260 30% 20%;
+    --input: 260 30% 20%;
+    --ring: 262 83% 58%;
+
+    --radius: 0.5rem;
+
+    /* Routina specific colors */
+    --routina-dark: 260 30% 12%;
+    --routina-purple: 262 83% 58%;
+    --routina-blue: 210 100% 60%;
+    --routina-green: 142 70% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at top right, hsl(260, 30%, 15%), hsl(260, 30%, 10%));
+    background-attachment: fixed;
+  }
+}
