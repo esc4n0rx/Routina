@@ -1,36 +1,57 @@
+// next.config.mjs
+import nextPwa from 'next-pwa';
+
+const withPWA = nextPwa({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  // ... (rest of your PWA config)
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/api\.routina\.fun\/api\//,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'api-cache',
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 5 * 60, // 5 minutos
+        },
+        networkTimeoutSeconds: 10,
+      },
+    },
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'images-cache',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 dias
+        },
+      },
+    },
+    {
+      urlPattern: /\.(?:js|css)$/,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'static-assets',
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 dias
+        },
+      },
+    },
+  ],
+  fallbacks: {
+    document: '/offline',
+  },
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Suas outras configurações aqui
   reactStrictMode: true,
-  images: {
-    domains: ['api.streamhivex.icu'], // Permite carregar imagens do domínio da API
-  },
-  // Configurações adicionais para exportação da aplicação
-  output: 'standalone',
-  // Habilitar análise de bundle para otimização
-  experimental: {
-    serverActions: {
-      allowedOrigins: [
-        'localhost:3000',
-        'routina.vercel.app',
-        // Adicione aqui outros domínios permitidos
-      ],
-    },
-  },
-  // Redirecionamentos
-  async redirects() {
-    return [
-      {
-        source: '/login',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/registro',
-        destination: '/',
-        permanent: true,
-      },
-    ];
-  },
+  // swcMinify: true, // Try removing or commenting this out
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);
