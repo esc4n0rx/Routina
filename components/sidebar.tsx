@@ -1,11 +1,14 @@
+// components/sidebar.tsx
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import { LayoutDashboard, CheckSquare, Calendar, Settings } from "lucide-react"
+import { useSafeArea } from "@/hooks/use-safe-area"
 
 export function Sidebar() {
   const pathname = usePathname()
+  const insets = useSafeArea();
 
   type NavItem = {
     name: string
@@ -43,6 +46,10 @@ export function Sidebar() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
       className="fixed bottom-0 left-0 right-0 z-10 bg-routina-dark/90 backdrop-blur-lg border-t border-routina-purple/20 px-2 py-2 md:py-3"
+      style={{ 
+        paddingBottom: `${Math.max(8, insets.bottom)}px`, // Garante um padding mínimo de 8px
+        bottom: 0
+      }}
     >
       <div className="flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {

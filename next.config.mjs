@@ -49,9 +49,20 @@ const withPWA = nextPwa({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Suas outras configurações aqui
   reactStrictMode: true,
-  // swcMinify: true, // Try removing or commenting this out
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'viewport-fit',
+            value: 'cover',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);
