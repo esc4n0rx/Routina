@@ -1,4 +1,5 @@
-// hooks/use-safe-area.ts
+"use client";
+
 import { useState, useEffect } from 'react';
 
 interface SafeAreaInsets {
@@ -17,13 +18,10 @@ export function useSafeArea() {
   });
 
   useEffect(() => {
-    // Função para obter os insets seguros
     const updateSafeArea = () => {
-      // Verificar se a API de environment variables CSS está disponível
       const safeAreaSupported = typeof CSS !== 'undefined' && CSS.supports('padding-top: env(safe-area-inset-top)');
       
       if (safeAreaSupported) {
-        // Criar um elemento temporário para ler os valores computados
         const div = document.createElement('div');
         div.style.paddingTop = 'env(safe-area-inset-top)';
         div.style.paddingRight = 'env(safe-area-inset-right)';
@@ -32,8 +30,7 @@ export function useSafeArea() {
         document.body.appendChild(div);
         
         const computedStyle = window.getComputedStyle(div);
-        
-        // Extrair valores e converter para números
+
         const top = parseInt(computedStyle.paddingTop) || 0;
         const right = parseInt(computedStyle.paddingRight) || 0;
         const bottom = parseInt(computedStyle.paddingBottom) || 0;
@@ -43,9 +40,6 @@ export function useSafeArea() {
         
         setInsets({ top, right, bottom, left });
       } else {
-        // Fallback para dispositivos que não suportam env()
-        // iOS geralmente tem uma status bar de ~44px e home indicator de ~34px
-        // Android pode variar mais, mas ~24px para status bar é comum
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const hasNotch = window.innerWidth / window.innerHeight < 0.5;
         
@@ -61,7 +55,6 @@ export function useSafeArea() {
       }
     };
 
-    // Atualizar imediatamente e em mudanças de orientação
     updateSafeArea();
     window.addEventListener('resize', updateSafeArea);
     
