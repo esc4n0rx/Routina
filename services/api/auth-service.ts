@@ -2,7 +2,7 @@ import { toast } from '@/hooks/use-toast';
 import { cookieUtils } from '@/lib/cookie-utils';
 
 // Definição da API base
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.streamhivex.icu';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.routina.fun';
 
 // Tipos para autenticação
 export interface LoginCredentials {

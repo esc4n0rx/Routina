@@ -107,19 +107,234 @@ body {
 }
 
 
-/* Adicione estas animações para melhorar a experiência visual */
-@keyframes float {
+/* Animações customizadas para elementos nativos */
+@keyframes shimmer {
   0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
     transform: translateY(0px);
   }
   50% {
     transform: translateY(-10px);
   }
+}
+
+/* Classe para elementos com efeito shimmer */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  background-size: 200px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Melhoria no backdrop blur para navegadores */
+.backdrop-blur-native {
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Scrollbar customizada para elementos nativos */
+.native-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.native-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.native-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.5);
+  border-radius: 3px;
+}
+
+.native-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.7);
+}
+
+/* Efeito de glassmorphism */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Gradiente animado para texto */
+.animated-gradient-text {
+  background: linear-gradient(
+    270deg,
+    #ffffff,
+    #c084fc,
+    #ec4899,
+    #ffffff
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
   100% {
-    transform: translateY(0px);
+    background-position: 0% 50%;
   }
 }
 
-.floating {
-  animation: float 4s ease-in-out infinite;
+/* Melhoria na seleção de texto */
+::selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: white;
+}
+
+/* Remover outline padrão e adicionar focus customizado */
+input:focus,
+button:focus {
+  outline: none;
+}
+
+/* Estados de hover para dispositivos móveis */
+@media (hover: hover) {
+  .hover-scale:hover {
+    transform: scale(1.02);
+    transition: transform 0.2s ease;
+  }
+}
+
+/* Otimizações para performance */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Melhoria na renderização de texto */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Efeito de particle para fundo */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.6;
+  animation: float 6s ease-in-out infinite;
+}
+
+.particle:nth-child(odd) {
+  animation-delay: -2s;
+  animation-direction: reverse;
+}
+
+.particle:nth-child(even) {
+  animation-delay: -4s;
+}
+
+/* Responsividade melhorada */
+@media (max-width: 640px) {
+  .mobile-padding {
+    padding: 1rem;
+  }
+  
+  .mobile-text-scale {
+    font-size: 0.9rem;
+  }
+}
+
+/* Suporte para modo escuro nativo */
+@media (prefers-color-scheme: dark) {
+  .auto-dark-bg {
+    background: #0F0A1F;
+  }
+}
+
+/* Melhorias para dispositivos com notch */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Efeito de loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.05) 25%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Melhoria na transição de páginas */
+.page-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Efeito de borda animada */
+.animated-border {
+  position: relative;
+  background: linear-gradient(45deg, transparent, rgba(139, 92, 246, 0.1), transparent);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+.animated-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: linear-gradient(45deg, #8B5CF6, #EC4899, #F59E0B);
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Otimização para telas de alta densidade */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi-optimized {
+    transform: translateZ(0);
+  }
 }
