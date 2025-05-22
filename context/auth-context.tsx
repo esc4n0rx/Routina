@@ -12,6 +12,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,13 +23,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
 
+  // Função para atualizar usuário com dados do backend
+  const refreshUser = async () => {
+    try {
+      if (authService.isAuthenticated()) {
+        const response = await authService.validateToken();
+        if (!response.erro) {
+          setUser(response.usuario);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar dados do usuário:", error);
+    }
+  };
+
   // Verificar autenticação ao iniciar
   useEffect(() => {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
         if (authService.isAuthenticated()) {
-          // Tenta validar o token existente
+          // Tenta validar o token existente e obter dados atualizados
           const response = await authService.validateToken();
           if (!response.erro) {
             setUser(response.usuario);
@@ -52,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authService.login({ email, senha: password });
       
       if (!response.erro) {
+        // Usar dados reais retornados pelo backend
         setUser(response.usuario);
         
         toast({
@@ -120,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // Função para atualizar dados do usuário
+  // Função para atualizar dados do usuário (localmente e no localStorage)
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
@@ -135,7 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     register,
     logout,
-    updateUser
+    updateUser,
+    refreshUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

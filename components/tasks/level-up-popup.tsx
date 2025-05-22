@@ -4,26 +4,26 @@ import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Trophy, X, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { levelService } from "@/lib/level-utils"
 
 interface LevelUpPopupProps {
   show: boolean;
   onClose: () => void;
   xpGained: number;
-  initialLevel: number;
-  initialXp: number;
-  newLevel?: number;
+  oldXP: number;
+  newXP: number;
 }
 
-export function LevelUpPopup({ show, onClose, xpGained, initialLevel, initialXp, newLevel }: LevelUpPopupProps) {
+export function LevelUpPopup({ show, onClose, xpGained, oldXP, newXP }: LevelUpPopupProps) {
   const [animationComplete, setAnimationComplete] = useState(false)
-  const isLevelUp = newLevel !== undefined && newLevel > initialLevel
-
-  // Cálculo fictício de XP para o próximo nível
-  const nextLevelXp = 1000
-
-  // Calcular a porcentagem de XP antes e depois
-  const xpPercentBefore = (initialXp / nextLevelXp) * 100
-  const xpPercentAfter = (((initialXp + xpGained) % nextLevelXp) / nextLevelXp) * 100
+  
+  // Verificar se houve level up usando dados reais
+  const levelUpInfo = levelService.checkLevelUp(oldXP, newXP)
+  const isLevelUp = levelUpInfo.leveledUp
+  
+  // Progress do nível antigo e novo
+  const oldProgress = levelService.getLevelProgress(oldXP)
+  const newProgress = levelService.getLevelProgress(newXP)
 
   useEffect(() => {
     if (show) {
@@ -120,7 +120,7 @@ export function LevelUpPopup({ show, onClose, xpGained, initialLevel, initialXp,
                 className="text-muted-foreground mb-6"
               >
                 {isLevelUp
-                  ? `Parabéns! Você avançou para o nível ${newLevel}!`
+                  ? `Parabéns! Você avançou para ${levelUpInfo.newLevel.nome} (Nível ${levelUpInfo.newLevel.nivel})!`
                   : `Você ganhou ${xpGained} pontos de experiência!`}
               </motion.p>
 
@@ -133,8 +133,8 @@ export function LevelUpPopup({ show, onClose, xpGained, initialLevel, initialXp,
                 {isLevelUp ? (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Nível {initialLevel}</span>
-                      <span>Nível {newLevel}</span>
+                      <span>{levelUpInfo.oldLevel.nome} (Nível {levelUpInfo.oldLevel.nivel})</span>
+                      <span>{levelUpInfo.newLevel.nome} (Nível {levelUpInfo.newLevel.nivel})</span>
                     </div>
                     <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted/30">
                       <motion.div
@@ -148,17 +148,20 @@ export function LevelUpPopup({ show, onClose, xpGained, initialLevel, initialXp,
                         className="absolute inset-y-0 left-0 bg-gradient-to-r from-routina-purple via-routina-blue to-routina-green"
                       />
                     </div>
+                    <div className="text-xs text-muted-foreground">
+                      {oldXP} XP → {newXP} XP (+{xpGained} XP)
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>{initialXp} XP</span>
-                      <span>{initialXp + xpGained} XP</span>
+                      <span>{oldProgress.currentLevel.nome} (Nível {oldProgress.currentLevel.nivel})</span>
+                      <span>{newProgress.nextLevel ? `${newProgress.xpInCurrentLevel}/${newProgress.xpNeededForNext} XP` : 'Nível Máximo'}</span>
                     </div>
                     <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted/30">
                       <motion.div
-                        initial={{ width: `${xpPercentBefore}%` }}
-                        animate={{ width: `${xpPercentAfter}%` }}
+                        initial={{ width: `${oldProgress.percentage}%` }}
+                        animate={{ width: `${newProgress.percentage}%` }}
                         transition={{
                           duration: 1.5,
                           delay: 0.6,
@@ -167,6 +170,14 @@ export function LevelUpPopup({ show, onClose, xpGained, initialLevel, initialXp,
                         className="absolute inset-y-0 left-0 bg-gradient-to-r from-routina-purple via-routina-blue to-routina-green"
                       />
                     </div>
+                    <div className="text-xs text-muted-foreground">
+                      {oldXP} XP → {newXP} XP (+{xpGained} XP)
+                    </div>
+                    {newProgress.nextLevel && (
+                      <div className="text-xs text-muted-foreground">
+                        Faltam {newProgress.nextLevel.pontos_necessarios - newXP} XP para {newProgress.nextLevel.nome}
+                      </div>
+                    )}
                   </div>
                 )}
 

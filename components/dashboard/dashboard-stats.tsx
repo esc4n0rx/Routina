@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/context/auth-context"
 import { taskService, Task } from "@/services/api/task-service"
+import { levelService } from "@/lib/level-utils"
 
 export function DashboardStats() {
   const { user } = useAuth()
@@ -31,26 +32,6 @@ export function DashboardStats() {
   useEffect(() => {
     fetchTasks()
   }, [])
-
-  // Função para calcular XP necessário para o próximo nível
-  const getNextLevelXp = (currentLevel: number) => {
-    // Fórmula progressiva: cada nível requer mais XP
-    return Math.floor(1000 * Math.pow(1.2, currentLevel - 1))
-  }
-
-  // Função para calcular progresso no nível atual
-  const getCurrentLevelProgress = (currentXp: number, currentLevel: number) => {
-    const previousLevelXp = currentLevel > 1 ? getNextLevelXp(currentLevel - 1) : 0
-    const nextLevelXp = getNextLevelXp(currentLevel)
-    const xpInCurrentLevel = currentXp - previousLevelXp
-    const xpNeededForCurrentLevel = nextLevelXp - previousLevelXp
-    
-    return {
-      current: Math.max(0, xpInCurrentLevel),
-      needed: xpNeededForCurrentLevel,
-      percentage: Math.max(0, Math.min(100, (xpInCurrentLevel / xpNeededForCurrentLevel) * 100))
-    }
-  }
 
   // Calcular estatísticas das tarefas
   const calculateTaskStats = () => {
@@ -79,14 +60,9 @@ export function DashboardStats() {
     }
   }
 
-  // Dados reais do usuário
-  const stats = {
-    level: user?.nivel || 1,
-    xp: user?.pontos_xp || 0,
-    sequence: user?.sequencia || 0,
-  }
-
-  const levelProgress = getCurrentLevelProgress(stats.xp, stats.level)
+  // Dados reais do usuário usando o serviço de níveis
+  const userXP = user?.pontos_xp || 0
+  const levelProgress = levelService.getLevelProgress(userXP)
   const taskStats = calculateTaskStats()
 
   if (loading) {
@@ -122,18 +98,21 @@ export function DashboardStats() {
                 <Trophy className="h-5 w-5 text-routina-purple" />
               </div>
               <div>
-                <h3 className="font-medium text-sm">Nível</h3>
-                <p className="text-2xl font-bold">{stats.level}</p>
+                <h3 className="font-medium text-sm">{levelProgress.currentLevel.nome}</h3>
+                <p className="text-2xl font-bold">Nível {levelProgress.currentLevel.nivel}</p>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{levelProgress.current} XP</span>
-                <span>{levelProgress.needed} XP</span>
+                <span>{levelProgress.xpInCurrentLevel} XP</span>
+                <span>{levelProgress.nextLevel ? `${levelProgress.xpNeededForNext} XP` : 'Máximo'}</span>
               </div>
               <XPProgressBar value={levelProgress.percentage} />
               <p className="text-xs text-muted-foreground">
-                {levelProgress.needed - levelProgress.current} XP para nível {stats.level + 1}
+                {levelProgress.nextLevel 
+                  ? `${levelProgress.nextLevel.pontos_necessarios - userXP} XP para ${levelProgress.nextLevel.nome}`
+                  : 'Nível máximo alcançado!'
+                }
               </p>
             </div>
           </CardContent>
@@ -148,12 +127,12 @@ export function DashboardStats() {
               </div>
               <div>
                 <h3 className="font-medium text-sm">Sequência</h3>
-                <p className="text-2xl font-bold">{stats.sequence}</p>
+                <p className="text-2xl font-bold">{user?.sequencia || 0}</p>
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.sequence > 0 
-                ? `${stats.sequence} dias consecutivos` 
+              {(user?.sequencia || 0) > 0 
+                ? `${user?.sequencia} dias consecutivos` 
                 : 'Complete tarefas para iniciar sua sequência'
               }
             </p>
@@ -181,30 +160,41 @@ export function DashboardStats() {
           </CardContent>
         </Card>
 
-        {/* Card de Tarefas Hoje */}
+        {/* Card de XP Total */}
         <Card className="border-neutral-800 bg-routina-dark/80 backdrop-blur-sm">
           <CardContent className="p-4 md:p-6">
-            <h3 className="font-medium text-sm mb-3">Tarefas Hoje</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-routina-green/10 p-2 text-center">
-                <div className="text-lg font-bold">{taskStats.completedToday}</div>
-                <div className="text-xs text-muted-foreground">Concluídas</div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="rounded-full bg-amber-500/20 p-2">
+                <Zap className="h-5 w-5 text-amber-500" />
               </div>
-              <div className="rounded-lg bg-muted/30 p-2 text-center">
-                <div className="text-lg font-bold">{taskStats.pendingToday}</div>
-                <div className="text-xs text-muted-foreground">Pendentes</div>
+              <div>
+                <h3 className="font-medium text-sm">XP Total</h3>
+                <p className="text-2xl font-bold">{userXP}</p>
               </div>
             </div>
             
-            {taskStats.totalTasksToday > 0 && (
-              <div className="mt-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Progresso do dia</span>
-                  <span>{taskStats.productivity}%</span>
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg bg-routina-green/10 p-2 text-center">
+                  <div className="text-sm font-bold">{taskStats.completedToday}</div>
+                  <div className="text-xs text-muted-foreground">Concluídas</div>
                 </div>
-                <Progress value={taskStats.productivity} className="h-1.5 bg-muted/30" />
+                <div className="rounded-lg bg-muted/30 p-2 text-center">
+                  <div className="text-sm font-bold">{taskStats.pendingToday}</div>
+                  <div className="text-xs text-muted-foreground">Pendentes</div>
+                </div>
               </div>
-            )}
+              
+              {taskStats.totalTasksToday > 0 && (
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                    <span>Progresso do dia</span>
+                    <span>{taskStats.productivity}%</span>
+                  </div>
+                  <Progress value={taskStats.productivity} className="h-1.5 bg-muted/30" />
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

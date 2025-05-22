@@ -1,4 +1,5 @@
 import { toast } from '@/hooks/use-toast';
+import { cookieUtils } from '@/lib/cookie-utils';
 
 // Definição da API base
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.streamhivex.icu';
@@ -115,8 +116,13 @@ export const authService = {
       
       if (!response.erro && response.token) {
         // Armazenar token em cookie seguro (7 dias de expiração)
-        document.cookie = `routina_token=${response.token}; path=/; max-age=604800; SameSite=Strict`;
-        // Armazenar usuário no localStorage
+        cookieUtils.set('routina_token', response.token, {
+          maxAge: 604800, // 7 dias em segundos
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        
+        // Armazenar usuário no localStorage (dados reais do backend)
         localStorage.setItem('routina_user', JSON.stringify(response.usuario));
       }
       
@@ -140,31 +146,25 @@ export const authService = {
   async validateToken(): Promise<AuthResponse> {
     try {
       // Obter token do cookie
-      const token = this.getTokenFromCookie();
+      const token = cookieUtils.get('routina_token');
       
       if (!token) {
         throw new Error('Token não encontrado');
       }
       
       const response = await apiRequest<AuthResponse>('/api/usuarios/validar', 'GET', undefined, token);
+      
+      // Atualizar dados do usuário no localStorage com dados atualizados do backend
+      if (!response.erro && response.usuario) {
+        localStorage.setItem('routina_user', JSON.stringify(response.usuario));
+      }
+      
       return response;
     } catch (error) {
       // Limpar dados de autenticação em caso de erro
       this.logout();
       throw error;
     }
-  },
-  
-  // Obter token do cookie
-  getTokenFromCookie(): string | null {
-    const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('routina_token='));
-    
-    if (tokenCookie) {
-      return tokenCookie.split('=')[1];
-    }
-    
-    return null;
   },
   
   // Obter usuário atual
@@ -180,13 +180,13 @@ export const authService = {
   
   // Verificar se o usuário está autenticado
   isAuthenticated(): boolean {
-    return !!this.getTokenFromCookie();
+    return cookieUtils.exists('routina_token');
   },
   
   // Logout de usuário
   logout(): void {
     // Remover cookie do token
-    document.cookie = 'routina_token=; path=/; max-age=0; SameSite=Strict';
+    cookieUtils.remove('routina_token');
     localStorage.removeItem('routina_user');
   }
 };

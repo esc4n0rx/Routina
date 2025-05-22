@@ -15,6 +15,7 @@ import { LevelUpPopup } from "@/components/tasks/level-up-popup"
 import { useAuth } from "@/context/auth-context"
 import { useTask } from "@/context/task-context"
 import { taskService, Task } from "@/services/api/task-service"
+import { levelService } from "@/lib/level-utils"
 
 export function TaskList() {
   const { toast } = useToast()
@@ -28,9 +29,8 @@ export function TaskList() {
   const [showLevelUpPopup, setShowLevelUpPopup] = useState(false)
   const [levelUpData, setLevelUpData] = useState({
     xpGained: 0,
-    initialLevel: 0,
-    initialXp: 0,
-    newLevel: undefined as number | undefined,
+    oldXP: 0,
+    newXP: 0,
   })
 
   const handleCompleteTask = async (taskId: string) => {
@@ -47,44 +47,41 @@ export function TaskList() {
         return
       }
 
+      // Armazenar XP atual antes da requisição
+      const currentXP = user?.pontos_xp || 0
+
       const response = await taskService.completeTask(taskId)
       
       if (!response.erro && response.tarefa) {
         // Atualizar a lista de tarefas
         await refreshTasks()
 
-        // Simulação de XP e level up baseado na resposta
-        if (!response.tarefa.vencida && user) {
-          const xpGained = response.tarefa.pontos
-          const initialXp = user.pontos_xp
-          const initialLevel = user.nivel
-          const newXp = initialXp + xpGained
+        // Usar dados reais da resposta da API
+        let xpGained = 0
+        let newXP = currentXP
+
+        // Se a tarefa não foi vencida, ganhou XP
+        if (!response.tarefa.vencida) {
+          xpGained = response.tarefa.pontos
+          newXP = currentXP + xpGained
+
+          // Verificar se houve level up usando o serviço real
+          const levelUpInfo = levelService.checkLevelUp(currentXP, newXP)
           
-          // Calcular se subiu de nível (fórmula simples)
-          const xpForNextLevel = Math.floor(1000 * Math.pow(1.2, initialLevel - 1))
-          let newLevel = undefined
-          
-          if (newXp >= xpForNextLevel) {
-            newLevel = initialLevel + 1
-            // Atualizar dados do usuário
+          if (user) {
+            // Atualizar dados do usuário com valores reais
             updateUser({
-              pontos_xp: newXp,
-              nivel: newLevel,
-              sequencia: user.sequencia + 1
-            })
-          } else {
-            // Atualizar apenas XP
-            updateUser({
-              pontos_xp: newXp,
+              pontos_xp: newXP,
+              nivel: levelUpInfo.newLevel.nivel,
               sequencia: user.sequencia + 1
             })
           }
 
+          // Mostrar popup com dados reais
           setLevelUpData({
             xpGained,
-            initialLevel,
-            initialXp,
-            newLevel,
+            oldXP: currentXP,
+            newXP,
           })
           setShowLevelUpPopup(true)
         }
@@ -416,9 +413,8 @@ export function TaskList() {
         show={showLevelUpPopup}
         onClose={() => setShowLevelUpPopup(false)}
         xpGained={levelUpData.xpGained}
-        initialLevel={levelUpData.initialLevel}
-        initialXp={levelUpData.initialXp}
-        newLevel={levelUpData.newLevel}
+        oldXP={levelUpData.oldXP}
+        newXP={levelUpData.newXP}
       />
     </>
   )
