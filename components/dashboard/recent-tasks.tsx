@@ -7,50 +7,55 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-
-// Dados fictícios para demonstração - versão compacta
-const mockTasks = [
-  {
-    id: "task-1",
-    title: "Finalizar relatório mensal",
-    status: "pending",
-    priority: "high",
-    category: "Trabalho",
-    dueDate: "2025-05-20T18:00:00",
-  },
-  {
-    id: "task-2",
-    title: "Treino de musculação",
-    status: "completed",
-    priority: "medium",
-    category: "Saúde",
-  },
-  {
-    id: "task-3",
-    title: "Comprar mantimentos",
-    status: "pending",
-    priority: "medium",
-    category: "Pessoal",
-    dueDate: "2025-05-16T20:00:00",
-  },
-  {
-    id: "task-4",
-    title: "Estudar para certificação",
-    status: "pending",
-    priority: "high",
-    category: "Estudo",
-    dueDate: "2025-05-25T23:59:00",
-  },
-];
+import { taskService, Task } from "@/services/api/task-service"
 
 export function RecentTasks() {
-  const [tasks, setTasks] = useState(mockTasks.slice(0, 5)); // Mostrar apenas 5 tarefas
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Na implementação real, buscaríamos tarefas recentes da API
+  const fetchRecentTasks = async () => {
+    try {
+      setLoading(true)
+      const response = await taskService.getTasks()
+      if (!response.erro && response.tarefas) {
+        // Flat o array caso seja aninhado e garantir que temos Task[]
+        const tarefasFlat = response.tarefas.flat()
+        
+        // Ordenar por data de criação e pegar as 5 mais recentes
+        const recentTasks = tarefasFlat
+          .sort((a: Task, b: Task) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime())
+          .slice(0, 5)
+        
+        setTasks(recentTasks)
+      } else {
+        setTasks([])
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tarefas recentes:', error)
+      setTasks([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    // Aqui ficaria a chamada para a API
-    // Por enquanto, usamos os dados mockados
-  }, []);
+    fetchRecentTasks()
+  }, [])
+
+  if (loading) {
+    return (
+      <Card className="border-routina-purple/30 bg-routina-dark/80 backdrop-blur-sm h-full">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Tarefas Recentes</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex items-center justify-center py-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <motion.div
@@ -81,27 +86,71 @@ export function RecentTasks() {
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/10 transition-colors"
                 >
-                  <TaskStatusIcon status={task.status} />
+                  <TaskStatusIcon task={task} />
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <h4 className="font-medium text-sm truncate">{task.title}</h4>
-                      <TaskPriorityBadge priority={task.priority} />
+                      <h4 className="font-medium text-sm truncate">{task.nome}</h4>
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-5">
+                        {task.pontos} XP
+                      </Badge>
                     </div>
                     
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {task.category && (
+                      {task.categorias && task.categorias.length > 0 && (
+                        <div className="flex gap-1">
+                          {task.categorias.slice(0, 2).map(category => (
+                            <span 
+                              key={category.id}
+                              className="px-1.5 py-0.5 rounded text-xs"
+                              style={{ 
+                                backgroundColor: `${category.cor}20`, 
+                                color: category.cor,
+                                fontSize: '10px'
+                              }}
+                            >
+                              {category.nome}
+                            </span>
+                          ))}
+                          {task.categorias.length > 2 && (
+                            <span className="text-muted-foreground">+{task.categorias.length - 2}</span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {task.data_vencimento && (
                         <>
-                          <span>{task.category}</span>
-                          {task.dueDate && <span>•</span>}
+                          {task.categorias && task.categorias.length > 0 && <span>•</span>}
+                          <span className={isOverdue(task.data_vencimento, task.hora_vencimento) && !task.concluida ? "text-red-400" : ""}>
+                            {formatDueDate(task.data_vencimento, task.hora_vencimento)}
+                          </span>
                         </>
                       )}
-                      {task.dueDate && (
-                        <span className={isOverdue(task.dueDate) && task.status !== "completed" ? "text-red-400" : ""}>
-                          {formatDueDate(task.dueDate)}
-                        </span>
-                      )}
                     </div>
+
+                    {task.tags && task.tags.length > 0 && (
+                      <div className="flex gap-1 mt-1">
+                        {task.tags.slice(0, 3).map(tag => (
+                          <Badge 
+                            key={tag.id}
+                            variant="outline" 
+                            className="text-xs px-1 py-0 h-4"
+                            style={{ 
+                              borderColor: tag.cor, 
+                              color: tag.cor,
+                              fontSize: '9px'
+                            }}
+                          >
+                            {tag.nome}
+                          </Badge>
+                        ))}
+                        {task.tags.length > 3 && (
+                          <Badge variant="outline" className="text-xs px-1 py-0 h-4" style={{ fontSize: '9px' }}>
+                            +{task.tags.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))
@@ -128,66 +177,47 @@ export function RecentTasks() {
   )
 }
 
-function TaskStatusIcon({ status }: { status: string }) {
-  switch (status) {
-    case "completed":
-      return <CheckCircle2 className="h-4 w-4 text-routina-green flex-shrink-0" />
-    case "pending":
-      return <Clock className="h-4 w-4 text-routina-blue flex-shrink-0" />
-    case "urgent":
-      return <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-    default:
-      return <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+function TaskStatusIcon({ task }: { task: Task }) {
+  if (task.concluida) {
+    return <CheckCircle2 className="h-4 w-4 text-routina-green flex-shrink-0" />
   }
+  
+  if (task.vencida || (task.data_vencimento && isOverdue(task.data_vencimento, task.hora_vencimento))) {
+    return <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+  }
+  
+  return <Clock className="h-4 w-4 text-routina-blue flex-shrink-0" />
 }
 
-function TaskPriorityBadge({ priority }: { priority: string }) {
-  switch (priority) {
-    case "high":
-      return (
-        <Badge variant="destructive" className="text-xs px-1.5 py-0.5 h-5">
-          Alta
-        </Badge>
-      )
-    case "medium":
-      return (
-        <Badge variant="default" className="bg-routina-blue hover:bg-routina-blue/90 text-xs px-1.5 py-0.5 h-5">
-          Média
-        </Badge>
-      )
-    case "low":
-      return (
-        <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5">
-          Baixa
-        </Badge>
-      )
-    default:
-      return null
-  }
-}
-
-function formatDueDate(dateString: string) {
+function formatDueDate(dateString: string, timeString?: string) {
   const date = new Date(dateString)
   const today = new Date()
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
   
   if (date.toDateString() === today.toDateString()) {
-    return `Hoje ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+    return timeString ? `Hoje ${timeString.substring(0, 5)}` : 'Hoje'
   } else if (date.toDateString() === tomorrow.toDateString()) {
-    return `Amanhã ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+    return timeString ? `Amanhã ${timeString.substring(0, 5)}` : 'Amanhã'
   } else {
-    return date.toLocaleDateString('pt-BR', { 
+    const dateFormatted = date.toLocaleDateString('pt-BR', { 
       day: 'numeric', 
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short'
     })
+    return timeString ? `${dateFormatted} ${timeString.substring(0, 5)}` : dateFormatted
   }
 }
 
-function isOverdue(dateString: string) {
-  const dueDate = new Date(dateString)
+function isOverdue(dateString: string, timeString?: string) {
   const now = new Date()
+  const dueDate = new Date(dateString)
+  
+  if (timeString) {
+    const [hours, minutes] = timeString.split(':').map(Number)
+    dueDate.setHours(hours, minutes, 0, 0)
+  } else {
+    dueDate.setHours(23, 59, 59, 999)
+  }
+  
   return dueDate < now
 }

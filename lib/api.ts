@@ -1,4 +1,5 @@
 import { toast } from '@/hooks/use-toast';
+import { cookieUtils } from '@/lib/cookie-utils';
 
 // Definição da API base
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.streamhivex.icu';
@@ -114,8 +115,13 @@ export const authService = {
       const response = await apiRequest<AuthResponse>('/api/usuarios/login', 'POST', credentials);
       
       if (!response.erro && response.token) {
-        // Armazenar token no localStorage
-        localStorage.setItem('routina_token', response.token);
+        // Armazenar token em cookie seguro (7 dias de expiração)
+        cookieUtils.set('routina_token', response.token, {
+          maxAge: 604800, // 7 dias em segundos
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        
         // Armazenar usuário no localStorage
         localStorage.setItem('routina_user', JSON.stringify(response.usuario));
       }
@@ -139,7 +145,8 @@ export const authService = {
   // Validar token do usuário
   async validateToken(): Promise<AuthResponse> {
     try {
-      const token = localStorage.getItem('routina_token');
+      // Obter token do cookie
+      const token = cookieUtils.get('routina_token');
       
       if (!token) {
         throw new Error('Token não encontrado');
@@ -167,12 +174,13 @@ export const authService = {
   
   // Verificar se o usuário está autenticado
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('routina_token');
+    return cookieUtils.exists('routina_token');
   },
   
   // Logout de usuário
   logout(): void {
-    localStorage.removeItem('routina_token');
+    // Remover cookie do token
+    cookieUtils.remove('routina_token');
     localStorage.removeItem('routina_user');
   }
-};
+}

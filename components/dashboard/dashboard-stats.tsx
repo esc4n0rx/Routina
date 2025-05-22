@@ -1,13 +1,36 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Trophy, Zap, TrendingUp, Target } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/context/auth-context"
+import { taskService, Task } from "@/services/api/task-service"
 
 export function DashboardStats() {
   const { user } = useAuth()
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Carregar tarefas para calcular estatísticas
+  const fetchTasks = async () => {
+    try {
+      setLoading(true)
+      const response = await taskService.getTasks()
+      if (!response.erro && response.tarefas) {
+        setTasks(response.tarefas.flat())
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTasks()
+  }, [])
 
   // Função para calcular XP necessário para o próximo nível
   const getNextLevelXp = (currentLevel: number) => {
@@ -29,20 +52,60 @@ export function DashboardStats() {
     }
   }
 
+  // Calcular estatísticas das tarefas
+  const calculateTaskStats = () => {
+    const today = new Date()
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+
+    const todayTasks = tasks.filter(task => {
+      const taskDate = new Date(task.data_criacao)
+      return taskDate >= todayStart && taskDate <= todayEnd
+    })
+
+    const completedToday = todayTasks.filter(task => task.concluida).length
+    const pendingToday = todayTasks.filter(task => !task.concluida && !task.vencida).length
+    const overdueToday = todayTasks.filter(task => !task.concluida && task.vencida).length
+
+    // Calcular produtividade (% de tarefas concluídas vs total)
+    const totalTasksToday = todayTasks.length
+    const productivity = totalTasksToday > 0 ? Math.round((completedToday / totalTasksToday) * 100) : 0
+
+    return {
+      completedToday,
+      pendingToday: pendingToday + overdueToday,
+      productivity,
+      totalTasksToday
+    }
+  }
+
   // Dados reais do usuário
   const stats = {
     level: user?.nivel || 1,
     xp: user?.pontos_xp || 0,
     sequence: user?.sequencia || 0,
-    // Dados fictícios que ainda não existem na API
-    tasksCompleted: 5,
-    tasksPending: 3,
-    productivity: 75,
-    productivityChange: 5
   }
 
   const levelProgress = getCurrentLevelProgress(stats.xp, stats.level)
-  const nextLevelXp = getNextLevelXp(stats.level)
+  const taskStats = calculateTaskStats()
+
+  if (loading) {
+    return (
+      <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="border-neutral-800 bg-routina-dark/80 backdrop-blur-sm">
+            <CardContent className="p-4 md:p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-neutral-700 rounded mb-2"></div>
+                <div className="h-8 bg-neutral-700 rounded mb-2"></div>
+                <div className="h-3 bg-neutral-700 rounded"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <motion.div
@@ -106,12 +169,14 @@ export function DashboardStats() {
               </div>
               <div>
                 <h3 className="font-medium text-sm">Produtividade</h3>
-                <p className="text-2xl font-bold">{stats.productivity}%</p>
+                <p className="text-2xl font-bold">{taskStats.productivity}%</p>
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.productivityChange > 0 ? "+" : ""}
-              {stats.productivityChange}% esta semana
+              {taskStats.totalTasksToday > 0 
+                ? `${taskStats.completedToday}/${taskStats.totalTasksToday} tarefas hoje`
+                : 'Nenhuma tarefa hoje'
+              }
             </p>
           </CardContent>
         </Card>
@@ -122,14 +187,24 @@ export function DashboardStats() {
             <h3 className="font-medium text-sm mb-3">Tarefas Hoje</h3>
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg bg-routina-green/10 p-2 text-center">
-                <div className="text-lg font-bold">{stats.tasksCompleted}</div>
+                <div className="text-lg font-bold">{taskStats.completedToday}</div>
                 <div className="text-xs text-muted-foreground">Concluídas</div>
               </div>
               <div className="rounded-lg bg-muted/30 p-2 text-center">
-                <div className="text-lg font-bold">{stats.tasksPending}</div>
+                <div className="text-lg font-bold">{taskStats.pendingToday}</div>
                 <div className="text-xs text-muted-foreground">Pendentes</div>
               </div>
             </div>
+            
+            {taskStats.totalTasksToday > 0 && (
+              <div className="mt-3">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Progresso do dia</span>
+                  <span>{taskStats.productivity}%</span>
+                </div>
+                <Progress value={taskStats.productivity} className="h-1.5 bg-muted/30" />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

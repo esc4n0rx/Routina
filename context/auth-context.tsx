@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,7 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (authService.isAuthenticated()) {
           // Tenta validar o token existente
           const response = await authService.validateToken();
-          setUser(response.usuario);
+          if (!response.erro) {
+            setUser(response.usuario);
+          }
         }
       } catch (error) {
         console.error("Erro ao validar autenticação:", error);
@@ -117,12 +120,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Função para atualizar dados do usuário
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem('routina_user', JSON.stringify(updatedUser));
+    }
+  };
+
   const value = {
     user,
     isLoading,
     login,
     register,
-    logout
+    logout,
+    updateUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

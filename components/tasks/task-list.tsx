@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Plus, Trash2, Edit, Copy, CheckCircle, AlertCircle } from "lucide-react"
+import { Plus, Trash2, Edit, Copy, CheckCircle, AlertCircle, Calendar, Clock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,77 +10,21 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
 import { TaskForm } from "@/components/tasks/task-form"
+import { DelayTaskDialog } from "@/components/tasks/delay-task-dialog"
 import { LevelUpPopup } from "@/components/tasks/level-up-popup"
 import { useAuth } from "@/context/auth-context"
-
-// Dados fictícios para demonstração
-const mockTasks = [
-  {
-    id: "task-1",
-    title: "Finalizar relatório mensal",
-    description: "Completar o relatório de desempenho para a reunião de equipe",
-    status: "pending",
-    priority: "high",
-    category: "Trabalho",
-    date: "2025-05-15T10:30:00",
-    dueDate: "2025-05-20T18:00:00",
-  },
-  {
-    id: "task-2",
-    title: "Treino de musculação",
-    description: "Foco em exercícios para as costas e bíceps",
-    status: "completed",
-    priority: "medium",
-    category: "Saúde",
-    date: "2025-05-15T08:00:00",
-  },
-  {
-    id: "task-3",
-    title: "Comprar mantimentos",
-    description: "Frutas, vegetais, proteínas e snacks saudáveis",
-    status: "pending",
-    priority: "medium",
-    category: "Pessoal",
-    date: "2025-05-16T14:00:00",
-    dueDate: "2025-05-16T20:00:00",
-  },
-  {
-    id: "task-4",
-    title: "Estudar para certificação",
-    description: "Revisar capítulos 5-8 e fazer exercícios práticos",
-    status: "pending",
-    priority: "high",
-    category: "Estudo",
-    date: "2025-05-14T19:00:00",
-    dueDate: "2025-05-25T23:59:00",
-  },
-  {
-    id: "task-5",
-    title: "Pagar contas mensais",
-    description: "Aluguel, luz, internet e cartão de crédito",
-    status: "urgent",
-    priority: "high",
-    category: "Finanças",
-    date: "2025-05-13T10:00:00",
-    dueDate: "2025-05-18T23:59:00",
-  },
-  {
-    id: "task-6",
-    title: "Ligar para o dentista",
-    description: "Agendar consulta de rotina",
-    status: "completed",
-    priority: "low",
-    category: "Saúde",
-    date: "2025-05-12T11:30:00",
-  }
-];
+import { useTask } from "@/context/task-context"
+import { taskService, Task } from "@/services/api/task-service"
 
 export function TaskList() {
   const { toast } = useToast()
-  const { user } = useAuth()
-  const [tasks, setTasks] = useState(mockTasks)
+  const { user, updateUser } = useAuth()
+  const { filteredTasks, loadingTasks, refreshTasks } = useTask()
+  
   const [showForm, setShowForm] = useState(false)
-  const [editingTask, setEditingTask] = useState<any>(null)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [showDelayDialog, setShowDelayDialog] = useState(false)
+  const [delayingTask, setDelayingTask] = useState<Task | null>(null)
   const [showLevelUpPopup, setShowLevelUpPopup] = useState(false)
   const [levelUpData, setLevelUpData] = useState({
     xpGained: 0,
@@ -89,84 +33,131 @@ export function TaskList() {
     newLevel: undefined as number | undefined,
   })
 
-  const handleCompleteTask = (taskId: string) => {
+  const handleCompleteTask = async (taskId: string) => {
     try {
-      // Atualiza o estado local
-      setTasks(
-        tasks.map((task) =>
-          task.id === taskId ? { ...task, status: task.status === "completed" ? "pending" : "completed" } : task,
-        ),
-      )
+      const task = filteredTasks.find(t => t.id === taskId)
+      if (!task) return
 
-      // Simulação de XP e level up
-      const xpGained = 50 // XP ganho por completar uma tarefa
-      const initialXp = user?.pontos_xp || 0
-      const initialLevel = user?.nivel || 1
-      const xpForNextLevel = 1000 // Valor fictício
-      
-      let newLevel = undefined;
-      if (initialXp + xpGained >= xpForNextLevel) {
-        newLevel = initialLevel + 1;
+      if (task.concluida) {
+        toast({
+          title: "Aviso",
+          description: "Esta tarefa já foi concluída.",
+          variant: "destructive",
+        })
+        return
       }
 
-      // Mostra popup de level up
-      setLevelUpData({
-        xpGained,
-        initialLevel,
-        initialXp,
-        newLevel,
-      })
-      setShowLevelUpPopup(true)
+      const response = await taskService.completeTask(taskId)
       
-      toast({
-        title: "Tarefa atualizada",
-        description: "Status da tarefa atualizado com sucesso.",
-      })
+      if (!response.erro && response.tarefa) {
+        // Atualizar a lista de tarefas
+        await refreshTasks()
+
+        // Simulação de XP e level up baseado na resposta
+        if (!response.tarefa.vencida && user) {
+          const xpGained = response.tarefa.pontos
+          const initialXp = user.pontos_xp
+          const initialLevel = user.nivel
+          const newXp = initialXp + xpGained
+          
+          // Calcular se subiu de nível (fórmula simples)
+          const xpForNextLevel = Math.floor(1000 * Math.pow(1.2, initialLevel - 1))
+          let newLevel = undefined
+          
+          if (newXp >= xpForNextLevel) {
+            newLevel = initialLevel + 1
+            // Atualizar dados do usuário
+            updateUser({
+              pontos_xp: newXp,
+              nivel: newLevel,
+              sequencia: user.sequencia + 1
+            })
+          } else {
+            // Atualizar apenas XP
+            updateUser({
+              pontos_xp: newXp,
+              sequencia: user.sequencia + 1
+            })
+          }
+
+          setLevelUpData({
+            xpGained,
+            initialLevel,
+            initialXp,
+            newLevel,
+          })
+          setShowLevelUpPopup(true)
+        }
+
+        toast({
+          title: "Tarefa concluída",
+          description: response.mensagem,
+        })
+      }
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar a tarefa.",
-        variant: "destructive",
-      })
+      console.error('Erro ao concluir tarefa:', error)
     }
   }
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     try {
-      // Atualiza o estado local
-      setTasks(tasks.filter((task) => task.id !== taskId))
-
-      toast({
-        title: "Tarefa removida",
-        description: "A tarefa foi removida com sucesso.",
-      })
+      const response = await taskService.deleteTask(taskId)
+      
+      if (!response.erro) {
+        await refreshTasks()
+        toast({
+          title: "Tarefa removida",
+          description: response.mensagem,
+        })
+      }
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível remover a tarefa.",
-        variant: "destructive",
-      })
+      console.error('Erro ao excluir tarefa:', error)
     }
   }
 
-  const handleEditTask = (task: any) => {
+  const handleEditTask = (task: Task) => {
     setEditingTask(task)
     setShowForm(true)
   }
 
-  const handleDuplicateTask = (task: any) => {
-    const newTask = {
-      ...task,
-      id: `task-${Date.now()}`,
-      title: `${task.title} (cópia)`,
+  const handleDuplicateTask = (task: Task) => {
+    const taskData = {
+      nome: `${task.nome} (cópia)`,
+      descricao: task.descricao,
+      data_vencimento: task.data_vencimento,
+      hora_vencimento: task.hora_vencimento,
+      pontos: task.pontos,
+      categorias: task.categorias?.map(c => c.id) || [],
+      tags: task.tags?.map(t => t.id) || []
     }
 
-    setTasks([...tasks, newTask])
+    handleFormSubmit(taskData)
+  }
 
-    toast({
-      title: "Tarefa duplicada",
-      description: "A tarefa foi duplicada com sucesso.",
-    })
+  const handleDelayTask = (task: Task) => {
+    setDelayingTask(task)
+    setShowDelayDialog(true)
+  }
+
+  const handleConfirmDelay = async (delayData: { data_vencimento: string; hora_vencimento?: string }) => {
+    if (!delayingTask) return
+
+    try {
+      const response = await taskService.delayTask(delayingTask.id, delayData)
+      
+      if (!response.erro && response.tarefa) {
+        await refreshTasks()
+        toast({
+          title: "Tarefa adiada",
+          description: response.mensagem,
+        })
+      }
+    } catch (error) {
+      console.error('Erro ao adiar tarefa:', error)
+    } finally {
+      setShowDelayDialog(false)
+      setDelayingTask(null)
+    }
   }
 
   const handleFormClose = () => {
@@ -174,40 +165,61 @@ export function TaskList() {
     setEditingTask(null)
   }
 
-  const handleFormSubmit = (taskData: any) => {
-    if (editingTask) {
-      // Atualiza tarefa existente
-      setTasks(tasks.map((task) => (task.id === editingTask.id ? { ...task, ...taskData } : task)))
+  const handleFormSubmit = async (taskData: any) => {
+    try {
+      if (editingTask) {
+        // Atualiza tarefa existente
+        const response = await taskService.updateTask(editingTask.id, {
+          nome: taskData.nome,
+          descricao: taskData.descricao,
+          data_vencimento: taskData.data_vencimento,
+          hora_vencimento: taskData.hora_vencimento,
+          pontos: taskData.pontos
+        })
 
-      toast({
-        title: "Tarefa atualizada",
-        description: "A tarefa foi atualizada com sucesso.",
-      })
-    } else {
-      // Adiciona nova tarefa
-      const newTask = {
-        id: `task-${Date.now()}`,
-        status: "pending",
-        date: new Date().toISOString(),
-        ...taskData,
+        if (!response.erro && response.tarefa) {
+          await refreshTasks()
+          toast({
+            title: "Tarefa atualizada",
+            description: response.mensagem,
+          })
+        }
+      } else {
+        // Adiciona nova tarefa
+        const response = await taskService.createTask(taskData)
+
+        if (!response.erro && response.tarefa) {
+          await refreshTasks()
+          toast({
+            title: "Tarefa adicionada",
+            description: response.mensagem,
+          })
+        }
       }
 
-      setTasks([newTask, ...tasks])
-
-      toast({
-        title: "Tarefa adicionada",
-        description: "A nova tarefa foi adicionada com sucesso.",
-      })
+      handleFormClose()
+    } catch (error) {
+      console.error('Erro ao salvar tarefa:', error)
     }
+  }
 
-    handleFormClose()
+  if (loadingTasks) {
+    return (
+      <Card className="border-neutral-800 bg-black/60 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
     <>
       <Card className="border-neutral-800 bg-black/60 backdrop-blur-sm">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Lista de Tarefas</CardTitle>
+          <CardTitle>Lista de Tarefas ({filteredTasks.length})</CardTitle>
           <Button onClick={() => setShowForm(true)} size="sm" className="gap-1">
             <Plus className="h-4 w-4" />
             Nova Tarefa
@@ -215,7 +227,7 @@ export function TaskList() {
         </CardHeader>
         <CardContent>
           <AnimatePresence>
-            {tasks.length === 0 ? (
+            {filteredTasks.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -225,14 +237,17 @@ export function TaskList() {
                 <div className="rounded-full bg-muted/30 p-4 mb-4">
                   <CheckCircle className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">Nenhuma tarefa</h3>
+                <h3 className="text-lg font-medium mb-2">Nenhuma tarefa encontrada</h3>
                 <p className="text-muted-foreground max-w-sm">
-                  Você não tem nenhuma tarefa no momento. Clique no botão "Nova Tarefa" para adicionar uma.
+                  {loadingTasks 
+                    ? "Carregando tarefas..."
+                    : "Nenhuma tarefa corresponde aos filtros aplicados. Tente ajustar os filtros ou criar uma nova tarefa."
+                  }
                 </p>
               </motion.div>
             ) : (
               <div className="space-y-4">
-                {tasks.map((task, index) => (
+                {filteredTasks.map((task, index) => (
                   <motion.div
                     key={task.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -243,28 +258,42 @@ export function TaskList() {
                   >
                     <div className="pt-0.5">
                       <Checkbox
-                        checked={task.status === "completed"}
+                        checked={task.concluida}
                         onCheckedChange={() => handleCompleteTask(task.id)}
-                        className={task.status === "completed" ? "text-green-500" : ""}
+                        className={task.concluida ? "text-green-500" : ""}
                       />
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h4
-                            className={`font-medium ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}
+                            className={`font-medium ${task.concluida ? "line-through text-muted-foreground" : ""}`}
                           >
-                            {task.title}
+                            {task.nome}
                           </h4>
-                          {task.priority === "high" && <AlertCircle className="h-4 w-4 text-red-500" />}
+                          {task.vencida && !task.concluida && (
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                          )}
+                          <Badge variant="secondary" className="text-xs">
+                            {task.pontos} XP
+                          </Badge>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {task.category && (
-                            <Badge variant="outline" className="text-xs">
-                              {task.category}
-                            </Badge>
+                          {task.categorias && task.categorias.length > 0 && (
+                            <div className="flex gap-1">
+                              {task.categorias.map(category => (
+                                <Badge 
+                                  key={category.id}
+                                  variant="outline" 
+                                  className="text-xs"
+                                  style={{ borderColor: category.cor, color: category.cor }}
+                                >
+                                  {category.nome}
+                                </Badge>
+                              ))}
+                            </div>
                           )}
 
                           <DropdownMenu>
@@ -297,6 +326,12 @@ export function TaskList() {
                                 <Copy className="mr-2 h-4 w-4" />
                                 <span>Duplicar</span>
                               </DropdownMenuItem>
+                              {!task.concluida && (
+                                <DropdownMenuItem onClick={() => handleDelayTask(task)}>
+                                  <Clock className="mr-2 h-4 w-4" />
+                                  <span>Adiar</span>
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => handleDeleteTask(task.id)}
                                 className="text-red-500 focus:text-red-500"
@@ -309,24 +344,45 @@ export function TaskList() {
                         </div>
                       </div>
 
-                      {task.description && (
+                      {task.descricao && (
                         <p
-                          className={`text-sm mt-1 ${task.status === "completed" ? "text-muted-foreground/70 line-through" : "text-muted-foreground"}`}
+                          className={`text-sm mt-1 ${task.concluida ? "text-muted-foreground/70 line-through" : "text-muted-foreground"}`}
                         >
-                          {task.description}
+                          {task.descricao}
                         </p>
                       )}
 
+                      {task.tags && task.tags.length > 0 && (
+                        <div className="flex gap-1 mt-2">
+                          {task.tags.map(tag => (
+                            <Badge 
+                              key={tag.id}
+                              variant="secondary" 
+                              className="text-xs"
+                              style={{ backgroundColor: `${tag.cor}20`, color: tag.cor }}
+                            >
+                              {tag.nome}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <span>{formatDate(task.date)}</span>
-                        {task.dueDate && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(task.data_criacao)}</span>
+                        </div>
+                        {task.data_vencimento && (
                           <>
                             <span>•</span>
-                            <span
-                              className={isOverdue(task.dueDate) && task.status !== "completed" ? "text-red-500" : ""}
-                            >
-                              Prazo: {formatDate(task.dueDate)}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span
+                                className={isOverdue(task.data_vencimento, task.hora_vencimento) && !task.concluida ? "text-red-500" : ""}
+                              >
+                                Prazo: {formatDateTime(task.data_vencimento, task.hora_vencimento)}
+                              </span>
+                            </div>
                           </>
                         )}
                       </div>
@@ -339,7 +395,22 @@ export function TaskList() {
         </CardContent>
       </Card>
 
-      <TaskForm open={showForm} onClose={handleFormClose} onSubmit={handleFormSubmit} initialData={editingTask} />
+      <TaskForm 
+        open={showForm} 
+        onClose={handleFormClose} 
+        onSubmit={handleFormSubmit} 
+        initialData={editingTask} 
+      />
+
+      <DelayTaskDialog
+        open={showDelayDialog}
+        onClose={() => {
+          setShowDelayDialog(false)
+          setDelayingTask(null)
+        }}
+        onConfirm={handleConfirmDelay}
+        task={delayingTask}
+      />
 
       <LevelUpPopup
         show={showLevelUpPopup}
@@ -362,8 +433,31 @@ function formatDate(dateString: string) {
   }).format(date)
 }
 
-function isOverdue(dateString: string) {
+function formatDateTime(dateString: string, timeString?: string) {
+  const date = new Date(dateString)
+  const dateFormatted = new Intl.DateTimeFormat("pt-BR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date)
+  
+  if (timeString) {
+    return `${dateFormatted} às ${timeString.substring(0, 5)}`
+  }
+  
+  return dateFormatted
+}
+
+function isOverdue(dateString: string, timeString?: string) {
+  const now = new Date()
   const dueDate = new Date(dateString)
-  const today = new Date()
-  return dueDate < today
+  
+  if (timeString) {
+    const [hours, minutes] = timeString.split(':').map(Number)
+    dueDate.setHours(hours, minutes, 0, 0)
+  } else {
+    dueDate.setHours(23, 59, 59, 999) // Final do dia se não houver horário específico
+  }
+  
+  return dueDate < now
 }

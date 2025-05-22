@@ -1,12 +1,26 @@
 import { authService, User, LoginCredentials, RegisterData, AuthResponse } from './auth-service';
+import { taskService, categoryService, tagService, Task, Category, Tag, CreateTaskData, UpdateTaskData, AdiarTaskData, ApiResponse } from './task-service';
 
 export {
-    authService
+    authService,
+    taskService,
+    categoryService,
+    tagService
 };
+
 export type {
-        // Exportando os tipos também
-        User,
-        LoginCredentials,
-        RegisterData,
-        AuthResponse
-    };
+    // Auth types
+    User,
+    LoginCredentials,
+    RegisterData,
+    AuthResponse,
+    
+    // Task types
+    Task,
+    Category,
+    Tag,
+    CreateTaskData,
+    UpdateTaskData,
+    AdiarTaskData,
+    ApiResponse
+};

@@ -1,121 +1,220 @@
-# Routina - App de Produtividade Gamificada
+# Routina - Sistema de Gerenciamento de Tarefas Gamificado
 
-Routina é uma aplicação web moderna para gerenciamento de tarefas e produtividade com elementos de gamificação. Com o Routina, você pode organizar suas tarefas, ganhar pontos de experiência (XP) ao concluí-las e avançar de nível enquanto mantém sua produtividade.
+Um aplicativo web moderno para gerenciamento de tarefas com elementos de gamificação, construído com Next.js, TypeScript e Tailwind CSS.
 
-## Tecnologias Utilizadas
+## 🚀 Funcionalidades
 
-- **Next.js**: Framework React para renderização do lado do servidor
-- **TypeScript**: Tipagem estática para melhor qualidade de código
-- **Tailwind CSS**: Framework CSS utilitário
-- **ShadcnUI**: Componentes de UI reutilizáveis
-- **Framer Motion**: Biblioteca de animações
-- **React Hook Form**: Gerenciamento de formulários
-- **Zod**: Validação de esquemas
-- **Jest**: Framework de testes
+### ✅ Gerenciamento de Tarefas
+- **Criar tarefas** com nome, descrição, pontos XP (1-20), data/hora de vencimento
+- **Editar e excluir** tarefas existentes
+- **Concluir tarefas** e ganhar pontos de experiência
+- **Adiar tarefas** com penalidade de pontos (30% de desconto)
+- **Duplicar tarefas** para criação rápida
+- **Filtrar tarefas** por status, categorias e tags
+- **Buscar tarefas** por nome ou descrição
 
-## Funcionalidades Principais
+### 🏷️ Categorias e Tags
+- **Categorias padrão** do sistema (Trabalho, Estudos, Pessoal, etc.)
+- **Categorias personalizadas** criadas pelo usuário
+- **Tags padrão** para organização (Urgente, Importante, etc.)
+- **Tags personalizadas** para melhor organização
+- **Seleção rápida** de tags populares nos filtros
 
-- 🔐 Sistema de autenticação (login/registro)
-- 📋 Gerenciamento de tarefas
-- 📊 Dashboard de produtividade
-- 📅 Calendário de eventos
-- 🎮 Sistema de gamificação (níveis, XP, conquistas)
-- 🌓 Tema escuro/claro
-- 📱 Design responsivo para dispositivos móveis
+### 🎮 Sistema de Gamificação
+- **Pontos de experiência (XP)** por completar tarefas
+- **Sistema de níveis** com progressão
+- **Sequência de dias consecutivos** completando tarefas
+- **Popup de level up** com animações
+- **Penalidades por adiamento** de tarefas
 
-## Começando
+### 📊 Dashboard
+- **Estatísticas em tempo real** (nível, XP, sequência, produtividade)
+- **Tarefas recentes** com visualização rápida
+- **Progresso visual** com barras de XP animadas
+- **Métricas de produtividade** baseadas em tarefas concluídas
+
+### 🔐 Autenticação
+- **Login/Registro** com validação
+- **Tokens JWT** para autenticação segura
+- **Cookies seguros** para persistência de sessão
+- **Validação de formulários** com mensagens de erro claras
+
+### 🎨 Interface Moderna
+- **Design responsivo** que funciona em desktop e mobile
+- **Tema escuro** com cores vibrantes
+- **Animações suaves** com Framer Motion
+- **Feedback visual** com toasts e loaders
+- **Componentes reutilizáveis** com Shadcn/UI
+
+## 🛠️ Tecnologias Utilizadas
+
+### Frontend
+- **Next.js 15** - Framework React com SSR/SSG
+- **TypeScript** - Tipagem estática para JavaScript
+- **Tailwind CSS** - Framework CSS utilitário
+- **Framer Motion** - Animações e transições
+- **Shadcn/UI** - Componentes de interface
+- **React Hook Form** - Gerenciamento de formulários
+- **Zod** - Validação de schemas
+
+### Backend/API
+- **API REST** - Documentada no arquivo `API.md`
+- **Autenticação JWT** - Tokens seguros
+- **Cookies HTTP** - Armazenamento seguro de tokens
+
+## 🏗️ Estrutura do Projeto
+
+```
+src/
+├── app/                    # App Router do Next.js
+│   ├── (dashboard)/        # Rotas protegidas do dashboard
+│   ├── globals.css         # Estilos globais
+│   ├── layout.tsx          # Layout principal
+│   ├── middleware.ts       # Middleware de autenticação
+│   └── page.tsx            # Página inicial (login)
+├── components/             # Componentes React
+│   ├── dashboard/          # Componentes do dashboard
+│   ├── tasks/              # Componentes de tarefas
+│   ├── ui/                 # Componentes base (Shadcn/UI)
+│   └── ...
+├── context/                # Contextos React
+│   ├── auth-context.tsx    # Contexto de autenticação
+│   └── task-context.tsx    # Contexto de tarefas
+├── hooks/                  # Hooks customizados
+├── lib/                    # Utilitários e configurações
+│   ├── cookie-utils.ts     # Utilitários para cookies
+│   ├── utils.ts            # Utilitários gerais
+│   └── validations/        # Schemas de validação
+├── services/               # Serviços de API
+│   └── api/                # Serviços organizados por domínio
+└── types/                  # Definições de tipos TypeScript
+```
+
+## 🚀 Como Executar
 
 ### Pré-requisitos
-
-- Node.js (versão 18 ou superior)
-- pnpm (recomendado) ou npm
+- Node.js 18+
+- npm ou pnpm
 
 ### Instalação
+```bash
+# Clone o repositório
+git clone <url-do-repositorio>
+cd routina
 
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/seu-usuario/routina.git
-   cd routina
-   ```
+# Instale as dependências
+npm install
+# ou
+pnpm install
 
-2. Instale as dependências:
-   ```bash
-   pnpm install
-   # ou
-   npm install
-   ```
-
-3. Configure as variáveis de ambiente:
-   Crie um arquivo `.env.local` na raiz do projeto com o seguinte conteúdo:
-   ```
-   NEXT_PUBLIC_API_URL=https://api.streamhivex.icu
-   ```
-
-4. Inicie o servidor de desenvolvimento:
-   ```bash
-   pnpm dev
-   # ou
-   npm run dev
-   ```
-
-5. Acesse a aplicação em http://localhost:3000
-
-## Estrutura do Projeto
-
-```
-routina/
-├── app/                   # Estrutura de roteamento Next.js
-│   ├── (dashboard)/       # Layout e páginas do dashboard
-│   ├── api/               # Rotas da API (caso necessário)
-│   ├── globals.css        # Estilos globais
-│   ├── layout.tsx         # Layout raiz da aplicação
-│   └── page.tsx           # Página inicial (login)
-├── components/            # Componentes React reutilizáveis
-│   ├── ui/                # Componentes de UI
-│   ├── dashboard/         # Componentes do dashboard
-│   ├── tasks/             # Componentes relacionados a tarefas
-│   └── ...
-├── contexts/              # Contextos React
-│   └── auth-context.tsx   # Contexto de autenticação
-├── hooks/                 # Hooks personalizados
-├── lib/                   # Funções utilitárias e validações
-├── public/                # Arquivos estáticos
-├── services/              # Serviços de API
-│   └── api.ts             # Cliente de API
-├── styles/                # Estilos e temas
-└── types/                 # Definições de tipos TypeScript
+# Configure as variáveis de ambiente
+cp .env.example .env.local
 ```
 
-## Testes
+### Configuração
+Edite o arquivo `.env.local` com as configurações da API:
 
-Para executar os testes:
+```env
+NEXT_PUBLIC_API_URL=https://api.streamhivex.icu
+```
+
+### Executar em desenvolvimento
+```bash
+npm run dev
+# ou
+pnpm dev
+```
+
+Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
+
+## 📱 Como Usar
+
+### 1. Primeiro Acesso
+1. Acesse a aplicação
+2. **Registre-se** com nome, email e senha
+3. **Faça login** com suas credenciais
+
+### 2. Dashboard
+- Visualize suas **estatísticas** (nível, XP, sequência)
+- Veja suas **tarefas recentes**
+- Acompanhe sua **produtividade**
+
+### 3. Gerenciar Tarefas
+1. Vá para a seção **"Tarefas"**
+2. Use os **filtros** para organizar (status, categorias, tags)
+3. **Crie nova tarefa** com o botão "+"
+4. **Configure** nome, descrição, pontos XP, prazo, categorias e tags
+5. **Marque como concluída** para ganhar XP
+6. **Adie tarefas** se necessário (com penalidade)
+
+### 4. Sistema de Pontos
+- **Ganhe XP** completando tarefas
+- **Suba de nível** acumulando XP
+- **Mantenha sequências** completando tarefas todos os dias
+- **Cuidado com penalidades** ao adiar tarefas
+
+### 5. Organização
+- Use **categorias** para agrupar tarefas por tipo
+- Use **tags** para marcação rápida
+- **Filtre e busque** tarefas facilmente
+- **Categorize** suas tarefas por prioridade e contexto
+
+## 🔧 Scripts Disponíveis
 
 ```bash
-pnpm test
-# ou
+# Desenvolvimento
+npm run dev
+
+# Build para produção
+npm run build
+
+# Executar produção
+npm start
+
+# Linting
+npm run lint
+
+# Testes
 npm run test
-```
-
-Para executar os testes com cobertura:
-
-```bash
-pnpm test:coverage
-# ou
+npm run test:watch
 npm run test:coverage
 ```
 
-## Deploy
+## 📚 Documentação da API
 
-Esta aplicação pode ser facilmente implantada na Vercel ou em outra plataforma de sua escolha que suporte Next.js.
+A documentação completa da API está disponível no arquivo `API.md`, incluindo:
+- Endpoints de autenticação
+- Endpoints de tarefas
+- Endpoints de categorias e tags
+- Exemplos de payloads e respostas
+- Códigos de erro
 
-Para criar uma build de produção:
+## 🎯 Funcionalidades Futuras
 
-```bash
-pnpm build
-# ou
-npm run build
-```
+- [ ] **Calendário integrado** com visualização de prazos
+- [ ] **Notificações push** para lembretes
+- [ ] **Relatórios** de produtividade
+- [ ] **Conquistas e badges** para gamificação
+- [ ] **Compartilhamento** de tarefas entre usuários
+- [ ] **Modo offline** com sincronização
+- [ ] **Exportação** de dados para CSV/PDF
+- [ ] **Temas personalizáveis**
 
-## Licença
+## 🤝 Contribuindo
 
-Este projeto está licenciado sob a Licença MIT - veja o arquivo LICENSE para detalhes.
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## 🙏 Agradecimentos
+
+- [Shadcn/UI](https://ui.shadcn.com/) - Componentes de interface
+- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
+- [Framer Motion](https://www.framer.com/motion/) - Animações
+- [Lucide React](https://lucide.dev/) - Ícones
