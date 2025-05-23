@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Bell, BellOff, Clock, Volume2, Zap, MessageSquare, Trophy, TrendingUp, AlertTriangle } from "lucide-react"
+import { Bell, BellOff, Clock, Volume2, Zap, MessageSquare, Trophy, TrendingUp, AlertTriangle, TestTube } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -22,8 +22,10 @@ export function NotificationSettings() {
     isEnabled,
     isLoading,
     settings,
+    backendConfigured,
     enableNotifications,
     disableNotifications,
+    testNotification,
     updateSettings,
     isSupported,
     hasPermission
@@ -62,6 +64,10 @@ export function NotificationSettings() {
     } else {
       await enableNotifications()
     }
+  }
+
+  const handleTestNotification = async () => {
+    await testNotification()
   }
 
   const handleUpdateSettings = async () => {
@@ -155,40 +161,51 @@ export function NotificationSettings() {
       key: 'casual',
       name: 'Casual',
       description: 'Amigável e descontraído'
-    },
-    {
-      key: 'motivational',
-      name: 'Motivacional',
-      description: 'Energético e inspirador'
-    },
-    {
-      key: 'friendly',
-      name: 'Amigável',
-      description: 'Caloroso e empático'
-    }
-  ]
+   },
+   {
+     key: 'motivational',
+     name: 'Motivacional',
+     description: 'Energético e inspirador'
+   },
+   {
+     key: 'friendly',
+     name: 'Amigável',
+     description: 'Caloroso e empático'
+   }
+ ]
 
-  if (!isSupported) {
-    return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Seu dispositivo não suporta notificações push. Você precisará de um navegador mais recente ou dispositivo diferente.
-          </AlertDescription>
-        </Alert>
-      </motion.div>
-    )
-  }
+ if (!isSupported) {
+   return (
+     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+       <Alert>
+         <AlertTriangle className="h-4 w-4" />
+         <AlertDescription>
+           Seu dispositivo não suporta notificações push. Você precisará de um navegador mais recente ou dispositivo diferente.
+         </AlertDescription>
+       </Alert>
+     </motion.div>
+   )
+ }
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      {/* Status das Notificações */}
-      <Card className="border-neutral-800 bg-black/60 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-           // Continuando components/settings/notification-settings.tsx
+ if (!backendConfigured) {
+   return (
+     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+       <Alert>
+         <AlertTriangle className="h-4 w-4" />
+         <AlertDescription>
+           As notificações push não estão configuradas no servidor. Entre em contato com o administrador do sistema.
+         </AlertDescription>
+       </Alert>
+     </motion.div>
+   )
+ }
 
+ return (
+   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+     {/* Status das Notificações */}
+     <Card className="border-neutral-800 bg-black/60 backdrop-blur-sm">
+       <CardHeader>
+         <CardTitle className="flex items-center gap-2">
            {isEnabled ? (
              <Bell className="h-5 w-5 text-green-500" />
            ) : (
@@ -215,6 +232,11 @@ export function NotificationSettings() {
                    Permissão necessária
                  </Badge>
                )}
+               {backendConfigured && (
+                 <Badge variant="outline" className="text-green-500 border-green-500">
+                   Servidor configurado
+                 </Badge>
+               )}
              </div>
              <p className="text-sm text-muted-foreground">
                {isEnabled 
@@ -223,13 +245,26 @@ export function NotificationSettings() {
                }
              </p>
            </div>
-           <Button 
-             onClick={handleToggleNotifications} 
-             disabled={isLoading}
-             variant={isEnabled ? "outline" : "default"}
-           >
-             {isLoading ? "Carregando..." : isEnabled ? "Desativar" : "Ativar"}
-           </Button>
+           <div className="flex gap-2">
+             {isEnabled && (
+               <Button 
+                 onClick={handleTestNotification} 
+                 disabled={isLoading}
+                 variant="outline"
+                 size="sm"
+               >
+                 <TestTube className="h-4 w-4 mr-1" />
+                 Testar
+               </Button>
+             )}
+             <Button 
+               onClick={handleToggleNotifications} 
+               disabled={isLoading}
+               variant={isEnabled ? "outline" : "default"}
+             >
+               {isLoading ? "Carregando..." : isEnabled ? "Desativar" : "Ativar"}
+             </Button>
+           </div>
          </div>
        </CardContent>
      </Card>
@@ -353,7 +388,7 @@ export function NotificationSettings() {
            <CardContent>
              <div className="space-y-4">
                {notificationTypes.map((type) => {
-                 const isEnabled = localSettings.tipos_habilitados.includes(type.key)
+                 const isTypeEnabled = localSettings.tipos_habilitados.includes(type.key)
                  const Icon = type.icon
                  
                  return (
@@ -373,7 +408,7 @@ export function NotificationSettings() {
                        </div>
                      </div>
                      <Switch
-                       checked={isEnabled}
+                       checked={isTypeEnabled}
                        onCheckedChange={() => handleTypeToggle(type.key)}
                      />
                    </div>
@@ -464,6 +499,14 @@ export function NotificationSettings() {
              Seus dados são processados de forma segura e privada
            </p>
          </div>
+         {backendConfigured && (
+           <div className="flex items-start gap-2">
+             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
+             <p>
+               ✅ Servidor configurado corretamente para push notifications
+             </p>
+           </div>
+         )}
        </CardContent>
      </Card>
    </motion.div>

@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useRouter } from 'next/navigation';
 import { User, authService } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { cookieUtils } from '@/lib/cookie-utils';
 
 interface AuthContextType {
   user: User | null;
@@ -57,6 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'GET_AUTH_TOKEN') {
+          const token = cookieUtils.get('routina_token');
+          event.ports[0].postMessage({ token });
+        }
+      });
+    }
 
     checkAuth();
   }, []);

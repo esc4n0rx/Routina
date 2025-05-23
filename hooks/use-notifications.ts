@@ -9,7 +9,30 @@ export function useNotifications() {
   const [isLoading, setIsLoading] = useState(false);
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [notifications, setNotifications] = useState<NeuroLinkNotification[]>([]);
+  const [backendConfigured, setBackendConfigured] = useState(false);
   const { toast } = useToast();
+
+  // Verificar configuração do backend
+  const checkBackendConfig = useCallback(async () => {
+    try {
+      const configured = await pushNotificationService.checkBackendConfiguration();
+      setBackendConfigured(configured);
+      
+      if (!configured) {
+        toast({
+          title: 'Configuração necessária',
+          description: 'Push notifications não estão configuradas no servidor.',
+          variant: 'destructive'
+        });
+      }
+      
+      return configured;
+    } catch (error) {
+      console.error('Erro ao verificar configuração do backend:', error);
+      setBackendConfigured(false);
+      return false;
+    }
+  }, [toast]);
 
   // Inicializar o serviço
   const initialize = useCallback(async () => {
@@ -22,6 +45,12 @@ export function useNotifications() {
           description: 'Seu dispositivo não suporta notificações push.',
           variant: 'destructive'
         });
+        return;
+      }
+
+      // Verificar configuração do backend
+      const configured = await checkBackendConfig();
+      if (!configured) {
         return;
       }
 
@@ -40,7 +69,7 @@ export function useNotifications() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, checkBackendConfig]);
 
   // Carregar configurações
   const loadSettings = useCallback(async () => {
@@ -58,6 +87,15 @@ export function useNotifications() {
   const enableNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
+
+      if (!backendConfigured) {
+        toast({
+          title: 'Configuração necessária',
+          description: 'Push notifications não estão configuradas no servidor.',
+          variant: 'destructive'
+        });
+        return false;
+      }
 
       const hasPermission = await pushNotificationService.requestPermission();
       if (!hasPermission) {
@@ -78,6 +116,17 @@ export function useNotifications() {
           title: 'Notificações ativadas',
           description: 'Você receberá notificações do Routina.',
         });
+        
+        // Testar notificação
+        setTimeout(async () => {
+          await pushNotificationService.testNotification();
+        }, 2000);
+      } else {
+        toast({
+          title: 'Erro na ativação',
+          description: 'Não foi possível ativar as notificações. Tente novamente.',
+          variant: 'destructive'
+        });
       }
 
       return success;
@@ -92,7 +141,7 @@ export function useNotifications() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, backendConfigured]);
 
   // Desativar notificações
   const disableNotifications = useCallback(async () => {
@@ -108,6 +157,42 @@ export function useNotifications() {
       });
     } catch (error) {
       console.error('Erro ao desativar notificações:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível desativar as notificações.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  // Testar notificação
+  const testNotification = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      const success = await pushNotificationService.testNotification();
+      
+      if (success) {
+        toast({
+          title: 'Teste enviado',
+          description: 'Você deve receber uma notificação de teste em breve.',
+        });
+      } else {
+        toast({
+          title: 'Erro no teste',
+          description: 'Não foi possível enviar a notificação de teste.',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao testar notificação:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível enviar a notificação de teste.',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -182,8 +267,10 @@ export function useNotifications() {
     isLoading,
     settings,
     notifications,
+    backendConfigured,
     enableNotifications,
     disableNotifications,
+    testNotification,
     updateSettings,
     loadNotifications,
     markAsRead,
