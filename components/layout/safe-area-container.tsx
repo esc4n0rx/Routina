@@ -1,4 +1,5 @@
-// components/layout/safe-area-container.tsx
+"use client";
+
 import React from 'react';
 import { useSafeArea } from '@/hooks/use-safe-area';
 
