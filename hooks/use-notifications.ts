@@ -13,7 +13,6 @@ export function useNotifications() {
   const [backendConfigured, setBackendConfigured] = useState(false);
   const { toast } = useToast();
 
-  // Verificar configuração do backend
   const checkBackendConfig = useCallback(async () => {
     try {
       const configured = await pushNotificationService.checkBackendConfiguration();
@@ -31,7 +30,6 @@ export function useNotifications() {
     }
   }, []);
 
-  // Verificar status da permissão
   const checkPermissionStatus = useCallback(() => {
     if (!pushNotificationService.isSupported()) {
       setPermissionStatus('unsupported');
@@ -43,7 +41,6 @@ export function useNotifications() {
     return status;
   }, []);
 
-  // Inicializar o serviço
   const initialize = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -58,29 +55,23 @@ export function useNotifications() {
         return false;
       }
 
-      // Verificar status atual da permissão
       const currentPermission = checkPermissionStatus();
       
-      // Verificar configuração do backend
       const configured = await checkBackendConfig();
       if (!configured) {
         return false;
       }
 
-      // Verificar se o serviço já está inicializado
       const initialized = await pushNotificationService.initialize();
       
-      // Verificar se existe subscrição ativa
       const hasActiveSubscription = await pushNotificationService.hasActiveSubscription();
       setIsEnabled(initialized && currentPermission === 'granted' && hasActiveSubscription);
 
-      // Carregar configurações se tiver permissão
       if (currentPermission === 'granted') {
         await loadSettings();
       }
       
       if (initialized && currentPermission === 'granted' && hasActiveSubscription) {
-        // Iniciar polling para verificar notificações
         pushNotificationService.startPolling(30000);
       }
       
@@ -93,7 +84,6 @@ export function useNotifications() {
     }
   }, [toast, checkBackendConfig, checkPermissionStatus]);
 
-  // Carregar configurações
   const loadSettings = useCallback(async () => {
     try {
       const response = await neurolinkService.getSettings();
@@ -105,7 +95,6 @@ export function useNotifications() {
     }
   }, []);
 
-  // Ativar notificações
   const enableNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -119,15 +108,12 @@ export function useNotifications() {
         return false;
       }
 
-      // Verifica se já inicializou
       if (!await pushNotificationService.isInitialized) {
         await initialize();
       }
 
-      // Solicita permissão explicitamente
       const hasPermission = await pushNotificationService.requestPermission();
       
-      // Atualiza o status de permissão após a solicitação
       checkPermissionStatus();
       
       if (!hasPermission) {
@@ -144,7 +130,6 @@ export function useNotifications() {
         setIsEnabled(true);
         pushNotificationService.startPolling(30000);
         
-        // Carrega configurações após ativação bem-sucedida
         await loadSettings();
         
         toast({
@@ -152,7 +137,6 @@ export function useNotifications() {
           description: 'Você receberá notificações do Routina.',
         });
         
-        // Testar notificação
         setTimeout(async () => {
           await pushNotificationService.testNotification();
         }, 2000);
@@ -178,7 +162,6 @@ export function useNotifications() {
     }
   }, [toast, backendConfigured, initialize, checkPermissionStatus, loadSettings]);
 
-  // Desativar notificações
   const disableNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -205,7 +188,6 @@ export function useNotifications() {
     }
   }, [toast]);
 
-  // Testar notificação
   const testNotification = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -239,7 +221,6 @@ export function useNotifications() {
     }
   }, [toast]);
 
-  // Atualizar configurações
   const updateSettings = useCallback(async (newSettings: NotificationSettings) => {
     try {
       setIsLoading(true);

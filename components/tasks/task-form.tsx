@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { categoryService, tagService, Category, Tag, Task } from "@/services/api/task-service"
 import { useToast } from "@/hooks/use-toast"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface TaskFormProps {
   open: boolean
@@ -27,6 +28,8 @@ interface TaskFormProps {
 
 export function TaskForm({ open, onClose, onSubmit, initialData }: TaskFormProps) {
   const { toast } = useToast()
+  const isMobile = useIsMobile()
+  
   const [formData, setFormData] = useState({
     nome: "",
     descricao: "",
@@ -42,7 +45,6 @@ export function TaskForm({ open, onClose, onSubmit, initialData }: TaskFormProps
   const [loadingCategories, setLoadingCategories] = useState(false)
   const [loadingTags, setLoadingTags] = useState(false)
 
-  // Carregar categorias e tags
   const fetchCategoriesAndTags = async () => {
     try {
       setLoadingCategories(true)
@@ -118,6 +120,25 @@ export function TaskForm({ open, onClose, onSubmit, initialData }: TaskFormProps
       : [...formData.tags, tagId]
     
     handleChange("tags", newTags)
+  }
+
+  // Função para lidar com mudança de data no input nativo (mobile)
+  const handleNativeDateChange = (dateString: string) => {
+    if (dateString) {
+      const date = new Date(dateString + 'T00:00:00')
+      handleChange("data_vencimento", date)
+    } else {
+      handleChange("data_vencimento", null)
+    }
+  }
+
+  // Função para formatar data para input nativo
+  const formatDateForNativeInput = (date: Date | null): string => {
+    if (!date) return ""
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -210,32 +231,43 @@ export function TaskForm({ open, onClose, onSubmit, initialData }: TaskFormProps
             <div className="space-y-2">
               <Label htmlFor="data_vencimento">Data de Vencimento</Label>
               <div className="flex gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={`w-full justify-start text-left font-normal bg-background/50 ${!formData.data_vencimento && "text-muted-foreground"}`}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.data_vencimento ? format(formData.data_vencimento, "PPP", { locale: ptBR }) : "Selecione uma data"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.data_vencimento || undefined}
-                      onSelect={(date) => handleChange("data_vencimento", date)}
-                      initialFocus
-                      locale={ptBR}
-                    />
-                  </PopoverContent>
-                </Popover>
+                {isMobile ? (
+                  // Input nativo para mobile
+                  <Input
+                    type="date"
+                    value={formatDateForNativeInput(formData.data_vencimento)}
+                    onChange={(e) => handleNativeDateChange(e.target.value)}
+                    className="bg-background/50 flex-1"
+                  />
+                ) : (
+                  // Popover com Calendar para desktop
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={`w-full justify-start text-left font-normal bg-background/50 ${!formData.data_vencimento && "text-muted-foreground"}`}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.data_vencimento ? format(formData.data_vencimento, "PPP", { locale: ptBR }) : "Selecione uma data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.data_vencimento || undefined}
+                        onSelect={(date) => handleChange("data_vencimento", date)}
+                        initialFocus
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
 
-              {formData.data_vencimento && (
-                <Button type="button" variant="ghost" size="icon" onClick={() => handleChange("data_vencimento", null)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
+                {formData.data_vencimento && (
+                  <Button type="button" variant="ghost" size="icon" onClick={() => handleChange("data_vencimento", null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
 
