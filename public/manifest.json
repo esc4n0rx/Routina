@@ -1,63 +1,63 @@
 {
   "name": "Routina - Produtividade Gamificada",
   "short_name": "Routina",
-  "description": "Transforme sua rotina em conquistas épicas com gamificação",
-  "start_url": "/dashboard?utm_source=homescreen",
+  "description": "Transforme sua rotina em conquistas épicas",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#1a103c",
   "theme_color": "#8B5CF6",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-BR",
-  "categories": ["productivity", "lifestyle", "utilities"],
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
@@ -69,19 +69,8 @@
       "icons": [
         {
           "src": "/icons/shortcut-new-task.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Ver resumo da produtividade",
-      "url": "/dashboard",
-      "icons": [
-        {
-          "src": "/icons/shortcut-dashboard.png",
-          "sizes": "192x192"
+          "sizes": "96x96",
+          "type": "image/png"
         }
       ]
     },
@@ -89,51 +78,42 @@
       "name": "Pomodoro",
       "short_name": "Pomodoro",
       "description": "Iniciar sessão de foco",
-      "url": "/dashboard?pomodoro=true",
+      "url": "/dashboard?pomodoro=start",
       "icons": [
         {
           "src": "/icons/shortcut-pomodoro.png",
-          "sizes": "192x192"
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver estatísticas e progresso",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/icons/shortcut-dashboard.png",
+          "sizes": "96x96",
+          "type": "image/png"
         }
       ]
     }
   ],
+  "categories": ["productivity", "lifestyle", "utilities"],
   "screenshots": [
     {
-      "src": "/screenshots/mobile-1.png",
-      "sizes": "390x844",
+      "src": "/screenshots/dashboard-mobile.png",
+      "sizes": "392x851",
       "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Dashboard principal do Routina"
+      "form_factor": "narrow"
     },
     {
-      "src": "/screenshots/mobile-2.png",
-      "sizes": "390x844",
+      "src": "/screenshots/tasks-mobile.png",
+      "sizes": "392x851",
       "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Lista de tarefas gamificada"
-    },
-    {
-      "src": "/screenshots/mobile-3.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Timer Pomodoro integrado"
-    }
-  ],
-  "share_target": {
-    "action": "/tasks/new",
-    "method": "GET",
-    "params": {
-      "title": "name",
-      "text": "description",
-      "url": "url"
-    }
-  },
-  "protocol_handlers": [
-    {
-      "protocol": "web+routina",
-      "url": "/task?action=%s"
+      "form_factor": "narrow"
     }
   ]
 }

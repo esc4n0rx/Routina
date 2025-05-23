@@ -61,10 +61,37 @@ export const pwaUtils = {
     if (!('serviceWorker' in navigator)) return;
 
     try {
-      await navigator.serviceWorker.register('/sw.ts');
-      console.log('Service Worker registrado com sucesso');
+      // Registrar o service worker principal
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/'
+      });
+      
+      console.log('✅ Service Worker registrado com sucesso', registration.scope);
+      
+      // Aguardar até estar ready
+      await navigator.serviceWorker.ready;
+      
     } catch (error) {
-      console.error('Erro ao registrar Service Worker:', error);
+      console.error('❌ Erro ao registrar Service Worker:', error);
+    }
+  },
+
+  // Registrar service worker para push notifications
+  registerPushServiceWorker: async (): Promise<ServiceWorkerRegistration | null> => {
+    if (!('serviceWorker' in navigator)) return null;
+
+    try {
+      const registration = await navigator.serviceWorker.register('/sw-push.js', {
+        scope: '/'
+      });
+      
+      console.log('✅ Push Service Worker registrado com sucesso');
+      await navigator.serviceWorker.ready;
+      
+      return registration;
+    } catch (error) {
+      console.error('❌ Erro ao registrar Push Service Worker:', error);
+      return null;
     }
   },
 
