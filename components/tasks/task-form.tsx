@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { CalendarIcon, X, Clock } from "lucide-react"
+import { CalendarIcon, X, Clock, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
@@ -44,6 +44,7 @@ export function TaskForm({ open, onClose, onSubmit, initialData }: TaskFormProps
   const [tags, setTags] = useState<Tag[]>([])
   const [loadingCategories, setLoadingCategories] = useState(false)
   const [loadingTags, setLoadingTags] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const fetchCategoriesAndTags = async () => {
     try {
@@ -141,7 +142,7 @@ export function TaskForm({ open, onClose, onSubmit, initialData }: TaskFormProps
     return `${year}-${month}-${day}`
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     // Validações
@@ -163,6 +164,9 @@ export function TaskForm({ open, onClose, onSubmit, initialData }: TaskFormProps
       return
     }
 
+    // Mostrar estado de carregamento
+    setIsSubmitting(true)
+
     // Preparar dados para envio
     const submitData = {
       nome: formData.nome.trim(),
@@ -174,224 +178,259 @@ export function TaskForm({ open, onClose, onSubmit, initialData }: TaskFormProps
       tags: formData.tags.length > 0 ? formData.tags : undefined,
     }
 
-    onSubmit(submitData)
-  }
+    // Fechar modal instantaneamente e chamar onSubmit para feedback imediato
+   onClose()
+   
+   // Chamar onSubmit que fará o optimistic update
+   onSubmit(submitData)
+   
+   setIsSubmitting(false)
+ }
 
-  return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] bg-black/90 border-neutral-800 max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{initialData ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nome */}
-          <div className="space-y-2">
-            <Label htmlFor="nome">Nome da Tarefa *</Label>
-            <Input
-              id="nome"
-              value={formData.nome}
-              onChange={(e) => handleChange("nome", e.target.value)}
-              placeholder="Digite o nome da tarefa"
-              required
-              className="bg-background/50"
-            />
-          </div>
+ return (
+   <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+     <DialogContent className="sm:max-w-[600px] bg-black/90 border-neutral-800 max-h-[90vh] overflow-y-auto">
+       <DialogHeader>
+         <DialogTitle>{initialData ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
+       </DialogHeader>
+       <form onSubmit={handleSubmit} className="space-y-4">
+         {/* Nome */}
+         <div className="space-y-2">
+           <Label htmlFor="nome">Nome da Tarefa *</Label>
+           <Input
+             id="nome"
+             value={formData.nome}
+             onChange={(e) => handleChange("nome", e.target.value)}
+             placeholder="Digite o nome da tarefa"
+             required
+             className="bg-background/50"
+             disabled={isSubmitting}
+           />
+         </div>
 
-          {/* Descrição */}
-          <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição</Label>
-            <Textarea
-              id="descricao"
-              value={formData.descricao}
-              onChange={(e) => handleChange("descricao", e.target.value)}
-              placeholder="Descreva a tarefa (opcional)"
-              className="bg-background/50 min-h-[80px]"
-            />
-          </div>
+         {/* Descrição */}
+         <div className="space-y-2">
+           <Label htmlFor="descricao">Descrição</Label>
+           <Textarea
+             id="descricao"
+             value={formData.descricao}
+             onChange={(e) => handleChange("descricao", e.target.value)}
+             placeholder="Descreva a tarefa (opcional)"
+             className="bg-background/50 min-h-[80px]"
+             disabled={isSubmitting}
+           />
+         </div>
 
-          {/* Pontos */}
-          <div className="space-y-2">
-            <Label htmlFor="pontos">Pontos XP (1-20) *</Label>
-            <Input
-              id="pontos"
-              type="number"
-              min="1"
-              max="20"
-              value={formData.pontos}
-              onChange={(e) => handleChange("pontos", parseInt(e.target.value) || 1)}
-              className="bg-background/50"
-            />
-            <p className="text-xs text-muted-foreground">
-              Defina quantos pontos de experiência você ganhará ao completar esta tarefa
-            </p>
-          </div>
+         {/* Pontos */}
+         <div className="space-y-2">
+           <Label htmlFor="pontos">Pontos XP (1-20) *</Label>
+           <Input
+             id="pontos"
+             type="number"
+             min="1"
+             max="20"
+             value={formData.pontos}
+             onChange={(e) => handleChange("pontos", parseInt(e.target.value) || 1)}
+             className="bg-background/50"
+             disabled={isSubmitting}
+           />
+           <p className="text-xs text-muted-foreground">
+             Defina quantos pontos de experiência você ganhará ao completar esta tarefa
+           </p>
+         </div>
 
-          {/* Data e Hora de Vencimento */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="data_vencimento">Data de Vencimento</Label>
-              <div className="flex gap-2">
-                {isMobile ? (
-                  // Input nativo para mobile
-                  <Input
-                    type="date"
-                    value={formatDateForNativeInput(formData.data_vencimento)}
-                    onChange={(e) => handleNativeDateChange(e.target.value)}
-                    className="bg-background/50 flex-1"
-                  />
-                ) : (
-                  // Popover com Calendar para desktop
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={`w-full justify-start text-left font-normal bg-background/50 ${!formData.data_vencimento && "text-muted-foreground"}`}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.data_vencimento ? format(formData.data_vencimento, "PPP", { locale: ptBR }) : "Selecione uma data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.data_vencimento || undefined}
-                        onSelect={(date) => handleChange("data_vencimento", date)}
-                        initialFocus
-                        locale={ptBR}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                )}
+         {/* Data e Hora de Vencimento */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div className="space-y-2">
+             <Label htmlFor="data_vencimento">Data de Vencimento</Label>
+             <div className="flex gap-2">
+               {isMobile ? (
+                 // Input nativo para mobile
+                 <Input
+                   type="date"
+                   value={formatDateForNativeInput(formData.data_vencimento)}
+                   onChange={(e) => handleNativeDateChange(e.target.value)}
+                   className="bg-background/50 flex-1"
+                   disabled={isSubmitting}
+                 />
+               ) : (
+                 // Popover com Calendar para desktop
+                 <Popover>
+                   <PopoverTrigger asChild>
+                     <Button
+                       variant="outline"
+                       className={`w-full justify-start text-left font-normal bg-background/50 ${!formData.data_vencimento && "text-muted-foreground"}`}
+                       disabled={isSubmitting}
+                     >
+                       <CalendarIcon className="mr-2 h-4 w-4" />
+                       {formData.data_vencimento ? format(formData.data_vencimento, "PPP", { locale: ptBR }) : "Selecione uma data"}
+                     </Button>
+                   </PopoverTrigger>
+                   <PopoverContent className="w-auto p-0" align="start">
+                     <Calendar
+                       mode="single"
+                       selected={formData.data_vencimento || undefined}
+                       onSelect={(date) => handleChange("data_vencimento", date)}
+                       initialFocus
+                       locale={ptBR}
+                     />
+                   </PopoverContent>
+                 </Popover>
+               )}
 
-                {formData.data_vencimento && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => handleChange("data_vencimento", null)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
+               {formData.data_vencimento && (
+                 <Button 
+                   type="button" 
+                   variant="ghost" 
+                   size="icon" 
+                   onClick={() => handleChange("data_vencimento", null)}
+                   disabled={isSubmitting}
+                 >
+                   <X className="h-4 w-4" />
+                 </Button>
+               )}
+             </div>
+           </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="hora_vencimento">Horário</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="hora_vencimento"
-                  type="time"
-                  value={formData.hora_vencimento}
-                  onChange={(e) => handleChange("hora_vencimento", e.target.value)}
-                  className="bg-background/50"
-                />
-                {formData.hora_vencimento && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => handleChange("hora_vencimento", "")}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
+           <div className="space-y-2">
+             <Label htmlFor="hora_vencimento">Horário</Label>
+             <div className="flex gap-2">
+               <Input
+                 id="hora_vencimento"
+                 type="time"
+                 value={formData.hora_vencimento}
+                 onChange={(e) => handleChange("hora_vencimento", e.target.value)}
+                 className="bg-background/50"
+                 disabled={isSubmitting}
+               />
+               {formData.hora_vencimento && (
+                 <Button 
+                   type="button" 
+                   variant="ghost" 
+                   size="icon" 
+                   onClick={() => handleChange("hora_vencimento", "")}
+                   disabled={isSubmitting}
+                 >
+                   <X className="h-4 w-4" />
+                 </Button>
+               )}
+             </div>
+           </div>
+         </div>
 
-          {/* Categorias */}
-          <div className="space-y-3">
-            <Label>Categorias</Label>
-            {loadingCategories ? (
-              <div className="text-sm text-muted-foreground">Carregando categorias...</div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                {categories.map((category) => (
-                  <div key={category.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`category-${category.id}`}
-                      checked={formData.categorias.includes(category.id)}
-                      onCheckedChange={() => handleCategoryToggle(category.id)}
-                    />
-                    <Label
-                      htmlFor={`category-${category.id}`}
-                      className="text-sm font-normal cursor-pointer flex items-center gap-2"
-                    >
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: category.cor }}
-                      />
-                      {category.nome}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            )}
-            {formData.categorias.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {formData.categorias.map((categoryId) => {
-                  const category = categories.find(c => c.id === categoryId)
-                  return category ? (
-                    <Badge
-                      key={category.id}
-                      variant="outline"
-                      className="text-xs"
-                      style={{ borderColor: category.cor, color: category.cor }}
-                    >
-                      {category.nome}
-                    </Badge>
-                  ) : null
-                })}
-              </div>
-            )}
-          </div>
+         {/* Categorias */}
+         <div className="space-y-3">
+           <Label>Categorias</Label>
+           {loadingCategories ? (
+             <div className="text-sm text-muted-foreground">Carregando categorias...</div>
+           ) : (
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+               {categories.map((category) => (
+                 <div key={category.id} className="flex items-center space-x-2">
+                   <Checkbox
+                     id={`category-${category.id}`}
+                     checked={formData.categorias.includes(category.id)}
+                     onCheckedChange={() => handleCategoryToggle(category.id)}
+                     disabled={isSubmitting}
+                   />
+                   <Label
+                     htmlFor={`category-${category.id}`}
+                     className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                   >
+                     <div
+                       className="w-3 h-3 rounded-full"
+                       style={{ backgroundColor: category.cor }}
+                     />
+                     {category.nome}
+                   </Label>
+                 </div>
+               ))}
+             </div>
+           )}
+           {formData.categorias.length > 0 && (
+             <div className="flex flex-wrap gap-1">
+               {formData.categorias.map((categoryId) => {
+                 const category = categories.find(c => c.id === categoryId)
+                 return category ? (
+                   <Badge
+                     key={category.id}
+                     variant="outline"
+                     className="text-xs"
+                     style={{ borderColor: category.cor, color: category.cor }}
+                   >
+                     {category.nome}
+                   </Badge>
+                 ) : null
+               })}
+             </div>
+           )}
+         </div>
 
-          {/* Tags */}
-          <div className="space-y-3">
-            <Label>Tags</Label>
-            {loadingTags ? (
-              <div className="text-sm text-muted-foreground">Carregando tags...</div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                {tags.map((tag) => (
-                  <div key={tag.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`tag-${tag.id}`}
-                      checked={formData.tags.includes(tag.id)}
-                      onCheckedChange={() => handleTagToggle(tag.id)}
-                    />
-                    <Label
-                      htmlFor={`tag-${tag.id}`}
-                      className="text-sm font-normal cursor-pointer flex items-center gap-2"
-                    >
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: tag.cor }}
-                      />
-                      {tag.nome}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            )}
-            {formData.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {formData.tags.map((tagId) => {
-                  const tag = tags.find(t => t.id === tagId)
-                  return tag ? (
-                    <Badge
-                      key={tag.id}
-                      variant="secondary"
-                      className="text-xs"
-                      style={{ backgroundColor: `${tag.cor}20`, color: tag.cor }}
-                    >
-                      {tag.nome}
-                    </Badge>
-                  ) : null
-                })}
-              </div>
-            )}
-          </div>
+         {/* Tags */}
+         <div className="space-y-3">
+           <Label>Tags</Label>
+           {loadingTags ? (
+             <div className="text-sm text-muted-foreground">Carregando tags...</div>
+           ) : (
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+               {tags.map((tag) => (
+                 <div key={tag.id} className="flex items-center space-x-2">
+                   <Checkbox
+                     id={`tag-${tag.id}`}
+                     checked={formData.tags.includes(tag.id)}
+                     onCheckedChange={() => handleTagToggle(tag.id)}
+                     disabled={isSubmitting}
+                   />
+                   <Label
+                     htmlFor={`tag-${tag.id}`}
+                     className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                   >
+                     <div
+                       className="w-3 h-3 rounded-full"
+                       style={{ backgroundColor: tag.cor }}
+                     />
+                     {tag.nome}
+                   </Label>
+                 </div>
+               ))}
+             </div>
+           )}
+           {formData.tags.length > 0 && (
+             <div className="flex flex-wrap gap-1">
+               {formData.tags.map((tagId) => {
+                 const tag = tags.find(t => t.id === tagId)
+                 return tag ? (
+                   <Badge
+                     key={tag.id}
+                     variant="secondary"
+                     className="text-xs"
+                     style={{ backgroundColor: `${tag.cor}20`, color: tag.cor }}
+                   >
+                     {tag.nome}
+                   </Badge>
+                 ) : null
+               })}
+             </div>
+           )}
+         </div>
 
-          <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit">{initialData ? "Salvar Alterações" : "Criar Tarefa"}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
+         <DialogFooter className="gap-2">
+           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+             Cancelar
+           </Button>
+           <Button type="submit" disabled={isSubmitting}>
+             {isSubmitting ? (
+               <>
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                 Salvando...
+               </>
+             ) : (
+               initialData ? "Salvar Alterações" : "Criar Tarefa"
+             )}
+           </Button>
+         </DialogFooter>
+       </form>
+     </DialogContent>
+   </Dialog>
+ )
 }

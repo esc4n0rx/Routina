@@ -32,6 +32,11 @@ interface TaskContextType {
   
   // Filtered tasks
   filteredTasks: Task[];
+  
+  // Optimistic updates
+  addOptimisticTask: (task: Partial<Task>) => void;
+  updateOptimisticTask: (id: string, updates: Partial<Task>) => void;
+  removeOptimisticTask: (id: string) => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -52,6 +57,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  // Optimistic updates state
+  const [optimisticTasks, setOptimisticTasks] = useState<Record<string, Partial<Task>>>({});
 
   // Fetch functions
   const refreshTasks = async () => {
@@ -60,6 +68,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const response = await taskService.getTasks();
       if (!response.erro && response.tarefas) {
         setTasks(response.tarefas.flat());
+        // Limpar optimistic updates após sync bem-sucedida
+        setOptimisticTasks({});
       }
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error);
@@ -101,8 +111,45 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Optimistic update functions
+  const addOptimisticTask = (task: Partial<Task>) => {
+    const tempId = `temp-${Date.now()}`;
+    setOptimisticTasks(prev => ({
+      ...prev,
+      [tempId]: { ...task, id: tempId }
+    }));
+  };
+
+  const updateOptimisticTask = (id: string, updates: Partial<Task>) => {
+    setOptimisticTasks(prev => ({
+      ...prev,
+      [id]: { ...prev[id], ...updates }
+    }));
+  };
+
+  const removeOptimisticTask = (id: string) => {
+    setOptimisticTasks(prev => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
+  };
+
+  // Apply optimistic updates to tasks
+  const getTasksWithOptimisticUpdates = () => {
+    const optimisticTasksList = Object.values(optimisticTasks).filter(task => task.id?.startsWith('temp-')) as Task[];
+    
+    return [
+      ...optimisticTasksList,
+      ...tasks.map(task => ({
+        ...task,
+        ...optimisticTasks[task.id]
+      })).filter(task => !(optimisticTasks[task.id] as any)?.__deleted)
+    ];
+  };
+
   // Filter logic
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = getTasksWithOptimisticUpdates().filter(task => {
     // Search query filter
     if (searchQuery && !task.nome.toLowerCase().includes(searchQuery.toLowerCase()) && 
         (!task.descricao || !task.descricao.toLowerCase().includes(searchQuery.toLowerCase()))) {
@@ -167,7 +214,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = {
-    tasks,
+    tasks: getTasksWithOptimisticUpdates(),
     loadingTasks,
     refreshTasks,
     categories,
@@ -185,6 +232,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     selectedTags,
     setSelectedTags,
     filteredTasks,
+    addOptimisticTask,
+    updateOptimisticTask,
+    removeOptimisticTask,
   };
 
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;

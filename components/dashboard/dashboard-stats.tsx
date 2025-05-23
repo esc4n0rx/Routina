@@ -13,14 +13,48 @@ export function DashboardStats() {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    completedToday: 0,
+    pendingToday: 0,
+    productivity: 0,
+    totalTasksToday: 0
+  })
 
-  // Carregar tarefas para calcular estatísticas
-  const fetchTasks = async () => {
+  // Memoizar dados do usuário para evitar recálculos desnecessários
+  const userXP = user?.pontos_xp || 0
+  const levelProgress = levelService.getLevelProgress(userXP)
+
+  // Carregar tarefas e calcular stats uma única vez
+  const fetchTasksAndCalculateStats = async () => {
     try {
       setLoading(true)
       const response = await taskService.getTasks()
       if (!response.erro && response.tarefas) {
-        setTasks(response.tarefas.flat())
+        const tarefasFlat = response.tarefas.flat()
+        setTasks(tarefasFlat)
+        
+        // Calcular estatísticas imediatamente
+        const today = new Date()
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+        const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+
+        const todayTasks = tarefasFlat.filter(task => {
+          const taskDate = new Date(task.data_criacao)
+          return taskDate >= todayStart && taskDate <= todayEnd
+        })
+
+        const completedToday = todayTasks.filter(task => task.concluida).length
+        const pendingToday = todayTasks.filter(task => !task.concluida && !task.vencida).length
+        const overdueToday = todayTasks.filter(task => !task.concluida && task.vencida).length
+        const totalTasksToday = todayTasks.length
+        const productivity = totalTasksToday > 0 ? Math.round((completedToday / totalTasksToday) * 100) : 0
+
+        setStats({
+          completedToday,
+          pendingToday: pendingToday + overdueToday,
+          productivity,
+          totalTasksToday
+        })
       }
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error)
@@ -30,40 +64,8 @@ export function DashboardStats() {
   }
 
   useEffect(() => {
-    fetchTasks()
+    fetchTasksAndCalculateStats()
   }, [])
-
-  // Calcular estatísticas das tarefas
-  const calculateTaskStats = () => {
-    const today = new Date()
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
-
-    const todayTasks = tasks.filter(task => {
-      const taskDate = new Date(task.data_criacao)
-      return taskDate >= todayStart && taskDate <= todayEnd
-    })
-
-    const completedToday = todayTasks.filter(task => task.concluida).length
-    const pendingToday = todayTasks.filter(task => !task.concluida && !task.vencida).length
-    const overdueToday = todayTasks.filter(task => !task.concluida && task.vencida).length
-
-    // Calcular produtividade (% de tarefas concluídas vs total)
-    const totalTasksToday = todayTasks.length
-    const productivity = totalTasksToday > 0 ? Math.round((completedToday / totalTasksToday) * 100) : 0
-
-    return {
-      completedToday,
-      pendingToday: pendingToday + overdueToday,
-      productivity,
-      totalTasksToday
-    }
-  }
-
-  // Dados reais do usuário usando o serviço de níveis
-  const userXP = user?.pontos_xp || 0
-  const levelProgress = levelService.getLevelProgress(userXP)
-  const taskStats = calculateTaskStats()
 
   if (loading) {
     return (
@@ -148,12 +150,12 @@ export function DashboardStats() {
               </div>
               <div>
                 <h3 className="font-medium text-sm">Produtividade</h3>
-                <p className="text-2xl font-bold">{taskStats.productivity}%</p>
+                <p className="text-2xl font-bold">{stats.productivity}%</p>
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              {taskStats.totalTasksToday > 0 
-                ? `${taskStats.completedToday}/${taskStats.totalTasksToday} tarefas hoje`
+              {stats.totalTasksToday > 0 
+                ? `${stats.completedToday}/${stats.totalTasksToday} tarefas hoje`
                 : 'Nenhuma tarefa hoje'
               }
             </p>
@@ -176,22 +178,22 @@ export function DashboardStats() {
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg bg-routina-green/10 p-2 text-center">
-                  <div className="text-sm font-bold">{taskStats.completedToday}</div>
+                  <div className="text-sm font-bold">{stats.completedToday}</div>
                   <div className="text-xs text-muted-foreground">Concluídas</div>
                 </div>
                 <div className="rounded-lg bg-muted/30 p-2 text-center">
-                  <div className="text-sm font-bold">{taskStats.pendingToday}</div>
+                  <div className="text-sm font-bold">{stats.pendingToday}</div>
                   <div className="text-xs text-muted-foreground">Pendentes</div>
                 </div>
               </div>
               
-              {taskStats.totalTasksToday > 0 && (
+              {stats.totalTasksToday > 0 && (
                 <div className="mt-2">
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
                     <span>Progresso do dia</span>
-                    <span>{taskStats.productivity}%</span>
+                    <span>{stats.productivity}%</span>
                   </div>
-                  <Progress value={taskStats.productivity} className="h-1.5 bg-muted/30" />
+                  <Progress value={stats.productivity} className="h-1.5 bg-muted/30" />
                 </div>
               )}
             </div>
