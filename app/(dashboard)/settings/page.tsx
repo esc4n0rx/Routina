@@ -1,4 +1,5 @@
-import { SettingsForm } from "@/components/settings/settings-form"
+// app/(dashboard)/settings/page.tsx
+import { NotificationSettings } from "@/components/settings/notification-settings"
 
 export default function SettingsPage() {
   return (
@@ -8,7 +9,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Gerencie suas preferências e configurações da conta.</p>
       </div>
 
-      <SettingsForm />
+      <NotificationSettings />
     </div>
   )
 }

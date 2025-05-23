@@ -7,6 +7,7 @@ import { TaskProvider } from "@/context/task-context"
 import { PWAProvider } from "@/components/pwa/pwa-provider"
 import PWAInstallButton from "@/components/pwa/pwa-install-button"
 import { SafeAreaContainer } from "@/components/layout/safe-area-container"
+import { NotificationProvider } from "@/components/notifications/notification-provider"
 
 export default function DashboardLayout({
   children,
@@ -23,16 +24,18 @@ export default function DashboardLayout({
         }}
       >
         <TaskProvider>
-          <div className="relative min-h-screen bg-background">
-            <SafeAreaContainer respectBottom={false}>
-              <div className="fixed top-4 right-4 z-40">
-                <PWAInstallButton variant="minimal" size="sm" />
-              </div>
-              
-              <main className="flex-1 pb-24 pt-6 px-4 md:px-6">{children}</main>
-              <Sidebar />
-            </SafeAreaContainer>
-          </div>
+          <NotificationProvider>
+            <div className="relative min-h-screen bg-background">
+              <SafeAreaContainer respectBottom={false}>
+                <div className="fixed top-4 right-4 z-40">
+                  <PWAInstallButton variant="minimal" size="sm" />
+                </div>
+                
+                <main className="flex-1 pb-24 pt-6 px-4 md:px-6">{children}</main>
+                <Sidebar />
+              </SafeAreaContainer>
+            </div>
+          </NotificationProvider>
           <Toaster />
         </TaskProvider>
       </PWAProvider>
