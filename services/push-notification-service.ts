@@ -14,7 +14,7 @@ export class PushNotificationService {
   private static instance: PushNotificationService;
   private registration: ServiceWorkerRegistration | null = null;
   private subscription: PushSubscription | null = null;
-  private isInitialized = false;
+  private _isInitialized = false;
   private pollingInterval: NodeJS.Timeout | null = null;
 
   private constructor() { // Construtor privado para reforçar o padrão Singleton
@@ -59,6 +59,34 @@ export class PushNotificationService {
       return false;
     }
   }
+
+
+  async hasActiveSubscription(): Promise<boolean> {
+    if (!this.isInitialized && !(await this.initialize())) {
+      return false;
+    }
+    
+    if (!this.registration) {
+      return false;
+    }
+    
+    try {
+      // Tenta obter a subscrição atual
+      const subscription = await this.registration.pushManager.getSubscription();
+      this.subscription = subscription;
+      
+      return !!subscription;
+    } catch (error) {
+      console.error('Erro ao verificar subscrição ativa:', error);
+      return false;
+    }
+  }
+
+  public get isInitialized(): boolean {
+    return this._isInitialized;
+  }
+
+  // Removido método isInitialized() para evitar conflito com a propriedade isInitialized
 
   // Obter token de autenticação
   private getAuthToken(): string | null {
@@ -213,11 +241,11 @@ export class PushNotificationService {
         console.log('ℹ️ Nenhuma subscrição existente encontrada.');
       }
 
-      this.isInitialized = true;
+      this._isInitialized = true;
       return true;
     } catch (error) {
       console.error('❌ Erro ao inicializar push notifications:', error);
-      this.isInitialized = false; // Garante que não fique em estado inconsistente
+      this._isInitialized = false; // Garante que não fique em estado inconsistente
       return false;
     }
   }
@@ -560,7 +588,7 @@ export class PushNotificationService {
         console.error("Erro ao desregistrar o Service Worker ou cancelar subscrição durante parada:", error);
     }
 
-    this.isInitialized = false;
+    this._isInitialized = false;
     console.log('PushNotificationService parado e limpo.');
   }
 }

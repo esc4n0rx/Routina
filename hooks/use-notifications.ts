@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 export function useNotifications() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'default' | 'unsupported'>('default');
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [notifications, setNotifications] = useState<NeuroLinkNotification[]>([]);
   const [backendConfigured, setBackendConfigured] = useState(false);
@@ -19,11 +20,7 @@ export function useNotifications() {
       setBackendConfigured(configured);
       
       if (!configured) {
-        toast({
-          title: 'Configuração necessária',
-          description: 'Push notifications não estão configuradas no servidor.',
-          variant: 'destructive'
-        });
+        console.warn('Push notifications não estão configuradas no servidor.');
       }
       
       return configured;
@@ -32,7 +29,19 @@ export function useNotifications() {
       setBackendConfigured(false);
       return false;
     }
-  }, [toast]);
+  }, []);
+
+  // Verificar status da permissão
+  const checkPermissionStatus = useCallback(() => {
+    if (!pushNotificationService.isSupported()) {
+      setPermissionStatus('unsupported');
+      return 'unsupported';
+    }
+    
+    const status = Notification.permission as 'granted' | 'denied' | 'default';
+    setPermissionStatus(status);
+    return status;
+  }, []);
 
   // Inicializar o serviço
   const initialize = useCallback(async () => {
@@ -40,36 +49,49 @@ export function useNotifications() {
       setIsLoading(true);
       
       if (!pushNotificationService.isSupported()) {
+        setPermissionStatus('unsupported');
         toast({
           title: 'Não suportado',
           description: 'Seu dispositivo não suporta notificações push.',
           variant: 'destructive'
         });
-        return;
+        return false;
       }
 
+      // Verificar status atual da permissão
+      const currentPermission = checkPermissionStatus();
+      
       // Verificar configuração do backend
       const configured = await checkBackendConfig();
       if (!configured) {
-        return;
+        return false;
       }
 
+      // Verificar se o serviço já está inicializado
       const initialized = await pushNotificationService.initialize();
-      setIsEnabled(initialized && pushNotificationService.hasPermission());
-
-      // Carregar configurações
-      await loadSettings();
       
-      if (initialized) {
+      // Verificar se existe subscrição ativa
+      const hasActiveSubscription = await pushNotificationService.hasActiveSubscription();
+      setIsEnabled(initialized && currentPermission === 'granted' && hasActiveSubscription);
+
+      // Carregar configurações se tiver permissão
+      if (currentPermission === 'granted') {
+        await loadSettings();
+      }
+      
+      if (initialized && currentPermission === 'granted' && hasActiveSubscription) {
         // Iniciar polling para verificar notificações
         pushNotificationService.startPolling(30000);
       }
+      
+      return initialized;
     } catch (error) {
       console.error('Erro ao inicializar notificações:', error);
+      return false;
     } finally {
       setIsLoading(false);
     }
-  }, [toast, checkBackendConfig]);
+  }, [toast, checkBackendConfig, checkPermissionStatus]);
 
   // Carregar configurações
   const loadSettings = useCallback(async () => {
@@ -97,7 +119,17 @@ export function useNotifications() {
         return false;
       }
 
+      // Verifica se já inicializou
+      if (!await pushNotificationService.isInitialized) {
+        await initialize();
+      }
+
+      // Solicita permissão explicitamente
       const hasPermission = await pushNotificationService.requestPermission();
+      
+      // Atualiza o status de permissão após a solicitação
+      checkPermissionStatus();
+      
       if (!hasPermission) {
         toast({
           title: 'Permissão negada',
@@ -111,6 +143,9 @@ export function useNotifications() {
       if (success) {
         setIsEnabled(true);
         pushNotificationService.startPolling(30000);
+        
+        // Carrega configurações após ativação bem-sucedida
+        await loadSettings();
         
         toast({
           title: 'Notificações ativadas',
@@ -141,7 +176,7 @@ export function useNotifications() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast, backendConfigured]);
+  }, [toast, backendConfigured, initialize, checkPermissionStatus, loadSettings]);
 
   // Desativar notificações
   const disableNotifications = useCallback(async () => {
@@ -155,6 +190,8 @@ export function useNotifications() {
         title: 'Notificações desativadas',
         description: 'Você não receberá mais notificações.',
       });
+      
+      return true;
     } catch (error) {
       console.error('Erro ao desativar notificações:', error);
       toast({
@@ -162,6 +199,7 @@ export function useNotifications() {
         description: 'Não foi possível desativar as notificações.',
         variant: 'destructive'
       });
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +224,8 @@ export function useNotifications() {
           variant: 'destructive'
         });
       }
+      
+      return success;
     } catch (error) {
       console.error('Erro ao testar notificação:', error);
       toast({
@@ -193,6 +233,7 @@ export function useNotifications() {
         description: 'Não foi possível enviar a notificação de teste.',
         variant: 'destructive'
       });
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -211,7 +252,11 @@ export function useNotifications() {
           title: 'Configurações atualizadas',
           description: 'Suas preferências foram salvas.',
         });
+        
+        return true;
       }
+      
+      return false;
     } catch (error) {
       console.error('Erro ao atualizar configurações:', error);
       toast({
@@ -219,6 +264,7 @@ export function useNotifications() {
         description: 'Não foi possível salvar as configurações.',
         variant: 'destructive'
       });
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -234,8 +280,11 @@ export function useNotifications() {
       if (!response.erro && response.notifications) {
         setNotifications(response.notifications);
       }
+      
+      return !response.erro;
     } catch (error) {
       console.error('Erro ao carregar notificações:', error);
+      return false;
     }
   }, []);
 
@@ -252,14 +301,27 @@ export function useNotifications() {
             : notif
         )
       );
+      
+      return true;
     } catch (error) {
       console.error('Erro ao marcar como lida:', error);
+      return false;
     }
   }, []);
 
   // Inicializar ao montar
   useEffect(() => {
-    initialize();
+    // Verificar se já tem permissão e configuração ao montar
+    const initOnMount = async () => {
+      await initialize();
+    };
+    
+    initOnMount();
+    
+    // Limpar recursos ao desmontar
+    return () => {
+      pushNotificationService.stopPolling();
+    };
   }, [initialize]);
 
   return {
@@ -268,13 +330,16 @@ export function useNotifications() {
     settings,
     notifications,
     backendConfigured,
+    permissionStatus,
     enableNotifications,
     disableNotifications,
     testNotification,
     updateSettings,
     loadNotifications,
     markAsRead,
+    initialize,
     isSupported: pushNotificationService.isSupported(),
-    hasPermission: pushNotificationService.hasPermission()
+    hasPermission: pushNotificationService.hasPermission(),
+    checkPermissionStatus,
   };
 }

@@ -1,8 +1,10 @@
+// components/protected-route.tsx
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
+import { useAfterLoginActions } from '@/hooks/use-auth-after-login';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,6 +13,9 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  
+  // Executa ações após o login bem-sucedido
+  useAfterLoginActions();
 
   useEffect(() => {
     // Se não estiver carregando e não houver usuário autenticado, redireciona para a página inicial

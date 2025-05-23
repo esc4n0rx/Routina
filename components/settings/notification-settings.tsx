@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Bell, BellOff, Clock, Volume2, Zap, MessageSquare, Trophy, TrendingUp, AlertTriangle, TestTube } from "lucide-react"
+import { Bell, BellOff, Clock, Volume2, Zap, MessageSquare, Trophy, TrendingUp, AlertTriangle, TestTube, Loader2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -28,7 +28,9 @@ export function NotificationSettings() {
     testNotification,
     updateSettings,
     isSupported,
-    hasPermission
+    hasPermission,
+    permissionStatus,
+    initialize
   } = useNotifications()
 
   const [localSettings, setLocalSettings] = useState<NotificationSettings>({
@@ -41,6 +43,7 @@ export function NotificationSettings() {
   })
 
   const [hasChanges, setHasChanges] = useState(false)
+  const [initializingPermission, setInitializingPermission] = useState(false)
 
   // Sincronizar com configurações do servidor
   useEffect(() => {
@@ -62,12 +65,26 @@ export function NotificationSettings() {
     if (isEnabled) {
       await disableNotifications()
     } else {
-      await enableNotifications()
+      setInitializingPermission(true)
+      try {
+        await enableNotifications()
+      } finally {
+        setInitializingPermission(false)
+      }
     }
   }
 
   const handleTestNotification = async () => {
     await testNotification()
+  }
+
+  const handleRetryInitialization = async () => {
+    setInitializingPermission(true)
+    try {
+      await initialize()
+    } finally {
+      setInitializingPermission(false)
+    }
   }
 
   const handleUpdateSettings = async () => {
@@ -223,15 +240,23 @@ export function NotificationSettings() {
        <CardContent>
          <div className="flex items-center justify-between">
            <div className="space-y-1">
-             <div className="flex items-center gap-2">
+             <div className="flex items-center gap-2 flex-wrap">
                <Badge variant={isEnabled ? "default" : "secondary"}>
                  {isEnabled ? "Ativado" : "Desativado"}
                </Badge>
-               {!hasPermission && !isEnabled && (
+               
+               {permissionStatus === 'denied' && (
+                 <Badge variant="destructive" className="animate-pulse">
+                   Permissão bloqueada
+                 </Badge>
+               )}
+               
+               {permissionStatus === 'default' && !isEnabled && (
                  <Badge variant="outline" className="text-orange-500 border-orange-500">
                    Permissão necessária
                  </Badge>
                )}
+               
                {backendConfigured && (
                  <Badge variant="outline" className="text-green-500 border-green-500">
                    Servidor configurado
@@ -241,7 +266,9 @@ export function NotificationSettings() {
              <p className="text-sm text-muted-foreground">
                {isEnabled 
                  ? "Notificações serão enviadas conforme suas configurações"
-                 : "Clique para ativar e configurar suas preferências"
+                 : permissionStatus === 'denied'
+                   ? "Permissões bloqueadas. Verifique as configurações do navegador."
+                   : "Clique para ativar e configurar suas preferências"
                }
              </p>
            </div>
@@ -249,7 +276,7 @@ export function NotificationSettings() {
              {isEnabled && (
                <Button 
                  onClick={handleTestNotification} 
-                 disabled={isLoading}
+                 disabled={isLoading || initializingPermission}
                  variant="outline"
                  size="sm"
                >
@@ -257,15 +284,52 @@ export function NotificationSettings() {
                  Testar
                </Button>
              )}
-             <Button 
-               onClick={handleToggleNotifications} 
-               disabled={isLoading}
-               variant={isEnabled ? "outline" : "default"}
-             >
-               {isLoading ? "Carregando..." : isEnabled ? "Desativar" : "Ativar"}
-             </Button>
+             
+             {permissionStatus === 'denied' ? (
+               <Button 
+                 onClick={handleRetryInitialization}
+                 disabled={isLoading || initializingPermission}
+                 variant="outline"
+               >
+                 {(isLoading || initializingPermission) ? (
+                   <>
+                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                     Carregando...
+                   </>
+                 ) : (
+                   "Verificar Novamente"
+                 )}
+               </Button>
+             ) : (
+               <Button 
+                 onClick={handleToggleNotifications} 
+                 disabled={isLoading || initializingPermission}
+                 variant={isEnabled ? "outline" : "default"}
+               >
+                 {(isLoading || initializingPermission) ? (
+                   <>
+                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                     Carregando...
+                   </>
+                 ) : isEnabled ? (
+                   "Desativar"
+                 ) : (
+                   "Ativar"
+                 )}
+               </Button>
+             )}
            </div>
          </div>
+         
+         {permissionStatus === 'denied' && (
+           <Alert className="mt-4 bg-destructive/10 border-destructive/20">
+             <AlertTriangle className="h-4 w-4" />
+             <AlertDescription className="text-sm">
+               Você bloqueou as permissões de notificação. Para ativar, acesse as configurações do seu navegador
+               e permita notificações para este site, depois clique em "Verificar Novamente".
+             </AlertDescription>
+           </Alert>
+         )}
        </CardContent>
      </Card>
 
@@ -458,7 +522,12 @@ export function NotificationSettings() {
                        disabled={isLoading}
                        className="bg-green-600 hover:bg-green-700"
                      >
-                       {isLoading ? "Salvando..." : "Salvar"}
+                       {isLoading ? (
+                         <>
+                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                           Salvando...
+                         </>
+                       ) : "Salvar"}
                      </Button>
                    </div>
                  </div>
