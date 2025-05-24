@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { taskService, Task } from "@/services/api/task-service"
+import { isTaskOverdue } from '@/lib/utils';
 
 export function RecentTasks() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -209,15 +210,5 @@ function formatDueDate(dateString: string, timeString?: string) {
 }
 
 function isOverdue(dateString: string, timeString?: string) {
-  const now = new Date()
-  const dueDate = new Date(dateString)
-  
-  if (timeString) {
-    const [hours, minutes] = timeString.split(':').map(Number)
-    dueDate.setHours(hours, minutes, 0, 0)
-  } else {
-    dueDate.setHours(23, 59, 59, 999)
-  }
-  
-  return dueDate < now
+  return isTaskOverdue(dateString, timeString);
 }

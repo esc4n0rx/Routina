@@ -16,6 +16,7 @@ import { useAuth } from "@/context/auth-context"
 import { useTask } from "@/context/task-context"
 import { taskService, Task } from "@/services/api/task-service"
 import { levelService } from "@/lib/level-utils"
+import { isTaskOverdue } from '@/lib/utils';
 
 export function TaskList() {
   const { toast } = useToast()
@@ -598,15 +599,5 @@ function formatDateTime(dateString: string, timeString?: string) {
 }
 
 function isOverdue(dateString: string, timeString?: string) {
-  const now = new Date()
-  const dueDate = new Date(dateString)
-  
-  if (timeString) {
-    const [hours, minutes] = timeString.split(':').map(Number)
-    dueDate.setHours(hours, minutes, 0, 0)
-  } else {
-    dueDate.setHours(23, 59, 59, 999) // Final do dia se não houver horário específico
-  }
-  
-  return dueDate < now
+  return isTaskOverdue(dateString, timeString);
 }

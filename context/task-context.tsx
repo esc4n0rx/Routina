@@ -1,8 +1,10 @@
+// context/task-context.tsx
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Task, Category, Tag, taskService, categoryService, tagService } from '@/services/api/task-service';
 import { useToast } from '@/hooks/use-toast';
+import { isTaskOverdue } from '@/lib/utils';
 
 interface TaskContextType {
   // Tasks
@@ -40,6 +42,37 @@ interface TaskContextType {
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
+
+// Função utilitária para trabalhar com datas no fuso horário de São Paulo
+const getSaoPauloDate = (dateString?: string, timeString?: string): Date => {
+  const now = new Date();
+  
+  if (dateString) {
+    // Parse da data no formato YYYY-MM-DD
+    const [year, month, day] = dateString.split('-').map(Number);
+    
+    // Criar data em São Paulo
+    const saoPauloDate = new Date();
+    saoPauloDate.setFullYear(year, month - 1, day);
+    
+    if (timeString) {
+      const [hours, minutes] = timeString.split(':').map(Number);
+      saoPauloDate.setHours(hours, minutes, 0, 0);
+    } else {
+      // Se não há horário específico, considera o final do dia
+      saoPauloDate.setHours(23, 59, 59, 999);
+    }
+    
+    return saoPauloDate;
+  }
+  
+  return now;
+};
+
+// Função para obter data atual de São Paulo
+const getSaoPauloNow = (): Date => {
+  return new Date();
+};
 
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
@@ -183,30 +216,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return true;
   });
 
-  // Helper function to get task status
   const getTaskStatus = (task: Task): string => {
-    if (task.concluida) return 'completed';
-    if (task.vencida) return 'overdue';
-    
-    // Check if overdue by date
-    if (task.data_vencimento) {
-      const now = new Date();
-      const dueDate = new Date(task.data_vencimento);
-      
-      if (task.hora_vencimento) {
-        const [hours, minutes] = task.hora_vencimento.split(':').map(Number);
-        dueDate.setHours(hours, minutes, 0, 0);
-      } else {
-        dueDate.setHours(23, 59, 59, 999);
-      }
-      
-      if (dueDate < now) return 'overdue';
-    }
-    
-    return 'pending';
-  };
+  if (task.concluida) return 'completed';
+  if (task.vencida) return 'overdue';
+  
+  if (task.data_vencimento && isTaskOverdue(task.data_vencimento, task.hora_vencimento)) {
+    return 'overdue';
+  }
+  
+  return 'pending';
+}
 
-  // Load initial data
   useEffect(() => {
     refreshTasks();
     refreshCategories();

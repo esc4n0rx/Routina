@@ -1,220 +1,246 @@
-# Routina - Sistema de Gerenciamento de Tarefas Gamificado
+# 📱 Routina
 
-Um aplicativo web moderno para gerenciamento de tarefas com elementos de gamificação, construído com Next.js, TypeScript e Tailwind CSS.
+## Visão Geral
 
-## 🚀 Funcionalidades
+O **Routina** é um aplicativo web moderno de gerenciamento de tarefas com elementos de gamificação, desenvolvido com **Next.js 15**, **TypeScript** e **Tailwind CSS**. O objetivo é transformar rotinas diárias em experiências envolventes por meio de pontos de experiência (XP), níveis, sequências e conquistas.
 
-### ✅ Gerenciamento de Tarefas
-- **Criar tarefas** com nome, descrição, pontos XP (1-20), data/hora de vencimento
-- **Editar e excluir** tarefas existentes
-- **Concluir tarefas** e ganhar pontos de experiência
-- **Adiar tarefas** com penalidade de pontos (30% de desconto)
-- **Duplicar tarefas** para criação rápida
-- **Filtrar tarefas** por status, categorias e tags
-- **Buscar tarefas** por nome ou descrição
+---
 
-### 🏷️ Categorias e Tags
-- **Categorias padrão** do sistema (Trabalho, Estudos, Pessoal, etc.)
-- **Categorias personalizadas** criadas pelo usuário
-- **Tags padrão** para organização (Urgente, Importante, etc.)
-- **Tags personalizadas** para melhor organização
-- **Seleção rápida** de tags populares nos filtros
+## 🎯 Objetivo
 
-### 🎮 Sistema de Gamificação
-- **Pontos de experiência (XP)** por completar tarefas
-- **Sistema de níveis** com progressão
-- **Sequência de dias consecutivos** completando tarefas
-- **Popup de level up** com animações
-- **Penalidades por adiamento** de tarefas
+Aumentar a produtividade e a motivação dos usuários ao gamificar tarefas cotidianas, transformando atividades simples em conquistas significativas por meio de um sistema de recompensas e progressão.
 
-### 📊 Dashboard
-- **Estatísticas em tempo real** (nível, XP, sequência, produtividade)
-- **Tarefas recentes** com visualização rápida
-- **Progresso visual** com barras de XP animadas
-- **Métricas de produtividade** baseadas em tarefas concluídas
+---
 
-### 🔐 Autenticação
-- **Login/Registro** com validação
-- **Tokens JWT** para autenticação segura
-- **Cookies seguros** para persistência de sessão
-- **Validação de formulários** com mensagens de erro claras
+## 🏗️ Arquitetura Técnica
 
-### 🎨 Interface Moderna
-- **Design responsivo** que funciona em desktop e mobile
-- **Tema escuro** com cores vibrantes
-- **Animações suaves** com Framer Motion
-- **Feedback visual** com toasts e loaders
-- **Componentes reutilizáveis** com Shadcn/UI
+### Stack Principal
 
-## 🛠️ Tecnologias Utilizadas
+* **Frontend**: Next.js 15 + TypeScript + Tailwind CSS
+* **UI Components**: Shadcn/UI + Radix UI
+* **Animações**: Framer Motion
+* **Validação**: Zod + React Hook Form
+* **Estado**: Context API + Hooks customizados
+* **Backend**: API REST externa - [https://api.routina.fun](https://api.routina.fun)
 
-### Frontend
-- **Next.js 15** - Framework React com SSR/SSG
-- **TypeScript** - Tipagem estática para JavaScript
-- **Tailwind CSS** - Framework CSS utilitário
-- **Framer Motion** - Animações e transições
-- **Shadcn/UI** - Componentes de interface
-- **React Hook Form** - Gerenciamento de formulários
-- **Zod** - Validação de schemas
-
-### Backend/API
-- **API REST** - Documentada no arquivo `API.md`
-- **Autenticação JWT** - Tokens seguros
-- **Cookies HTTP** - Armazenamento seguro de tokens
-
-## 🏗️ Estrutura do Projeto
+### Estrutura de Pastas
 
 ```
 src/
-├── app/                    # App Router do Next.js
-│   ├── (dashboard)/        # Rotas protegidas do dashboard
+├── app/
+│   ├── (dashboard)/        # Rotas protegidas
 │   ├── globals.css         # Estilos globais
 │   ├── layout.tsx          # Layout principal
-│   ├── middleware.ts       # Middleware de autenticação
-│   └── page.tsx            # Página inicial (login)
-├── components/             # Componentes React
+│   └── page.tsx            # Login/Registro
+├── components/
 │   ├── dashboard/          # Componentes do dashboard
-│   ├── tasks/              # Componentes de tarefas
-│   ├── ui/                 # Componentes base (Shadcn/UI)
-│   └── ...
+│   ├── tasks/              # Tarefas
+│   ├── ui/                 # Componentes base
+│   ├── auth/               # Autenticação
+│   ├── settings/           # Configurações
+│   └── notifications/      # Notificações IA
 ├── context/                # Contextos React
-│   ├── auth-context.tsx    # Contexto de autenticação
-│   └── task-context.tsx    # Contexto de tarefas
 ├── hooks/                  # Hooks customizados
-├── lib/                    # Utilitários e configurações
-│   ├── cookie-utils.ts     # Utilitários para cookies
-│   ├── utils.ts            # Utilitários gerais
-│   └── validations/        # Schemas de validação
+├── lib/                    # Utilitários
 ├── services/               # Serviços de API
-│   └── api/                # Serviços organizados por domínio
-└── types/                  # Definições de tipos TypeScript
+└── types/                  # Tipagens
 ```
 
-## 🚀 Como Executar
+---
 
-### Pré-requisitos
-- Node.js 18+
-- npm ou pnpm
+## 🔐 Autenticação
 
-### Instalação
-```bash
-# Clone o repositório
-git clone <url-do-repositorio>
-cd routina
+* Login/Registro com validação
+* JWT armazenado em cookies seguros
+* Middleware de rotas protegidas
+* Contexto global de autenticação
 
-# Instale as dependências
-npm install
-# ou
-pnpm install
+---
 
-# Configure as variáveis de ambiente
-cp .env.example .env.local
+## 📋 Funcionalidades
+
+### 1. Gerenciamento de Tarefas
+
+* Criação, edição, exclusão e duplicação de tarefas
+* Pontuação XP de 1 a 20 por tarefa
+* Conclusão com XP, adiamento com penalidade (30%)
+* Filtros avançados por status, categoria e tags
+* Busca por nome ou descrição
+
+### 2. Gamificação
+
+* **XP**: 1-20 por tarefa
+* **Níveis**: 10 níveis (Iniciante → Iluminado)
+* **Sequência**: Dias consecutivos de produtividade
+* **Penalidades**: Redução de XP
+* **Level Up**: Popup animado
+
+### 3. Categorias e Tags
+
+* Categorias e tags padrão e personalizadas
+* Sistema de cores para organização visual
+* Filtros rápidos
+
+### 4. Dashboard
+
+* Estatísticas em tempo real
+* Progresso visual com barras de XP
+* Visualização de tarefas recentes
+* Métricas diárias
+
+### 5. PWA
+
+* Instalação nativa em dispositivos móveis
+* Funcionalidades offline via Service Worker
+* Interface otimizada para mobile
+
+### 6. Notificações IA (NeuroLink)
+
+* Alertas, lembretes, motivação, conquistas, progresso, dicas
+* Personalização com 4 personalidades
+* Horários e tipos configuráveis
+* Notificações push nativas com feedback
+
+---
+
+## 🎨 Design e Experiência
+
+* Tema escuro com gradientes roxo/azul
+* Animações suaves com Framer Motion
+* Interface responsiva mobile-first
+* Safe Areas para dispositivos com notch
+* Sistema de design com componentes reutilizáveis (Shadcn/UI)
+
+---
+
+## 🔧 Funcionalidades Técnicas Avançadas
+
+### Optimistic Updates
+
+* Atualização instantânea com reversão em erro
+* Feedback visual imediato
+
+### Gerenciamento de Estado
+
+* Context API + Hooks customizados
+* Cache inteligente
+
+### Tratamento de Erros
+
+* Try/catch com toasts informativos
+* Fallbacks visuais e logs para debugging
+
+### Performance
+
+* Lazy loading, memoização, otimização de re-renders
+* Bundle splitting
+
+---
+
+## 📱 Páginas e Rotas
+
+### Rotas Públicas
+
+* `/` - Login e registro
+
+### Rotas Protegidas
+
+* `/dashboard` - Painel principal
+* `/tasks` - Lista de tarefas
+* `/calendar` - Calendário (em desenvolvimento)
+* `/settings` - Configurações e notificações
+
+---
+
+## 🔔 Notificações Inteligentes
+
+### Tipos
+
+* **ALERT** - Urgências
+* **REMINDER** - Lembretes
+* **MOTIVATION** - Incentivos
+* **ACHIEVEMENT** - Conquistas
+* **PROGRESS** - Relatórios
+* **INSIGHT** - Dicas personalizadas
+
+### Configurações
+
+* Estilo da IA: Formal, Casual, Motivacional, Amigável
+* Horário, frequência e tipos configuráveis
+* Feedback adaptativo
+
+---
+
+## 🚀 Funcionalidades em Desenvolvimento
+
+* Visualização de prazos em calendário
+* Relatórios detalhados de produtividade
+* Conquistas e badges
+* Compartilhamento de tarefas
+* Exportação de dados
+* Temas personalizados
+
+---
+
+## 🛠️ APIs e Integrações
+
+### Endpoints
+
+* **Autenticação**: `/api/usuarios/login`, `/api/usuarios/registro`
+* **Tarefas**: `/api/tarefas`
+* **Categorias**: `/api/categorias`
+* **Tags**: `/api/tags`
+* **Notificações**: `/api/neurolink/*`
+
+### Estrutura de Dados
+
+```ts
+interface Task {
+  id: string;
+  nome: string;
+  descricao?: string;
+  pontos: number;
+  data_vencimento?: string;
+  hora_vencimento?: string;
+  concluida: boolean;
+  vencida: boolean;
+  categorias?: Category[];
+  tags?: Tag[];
+}
+
+interface User {
+  id: string;
+  nome: string;
+  email: string;
+  nivel: number;
+  pontos_xp: number;
+  sequencia: number;
+}
 ```
 
-### Configuração
-Edite o arquivo `.env.local` com as configurações da API:
+---
 
-```env
-NEXT_PUBLIC_API_URL=https://api.streamhivex.icu
-```
+## 🎯 Diferenciais
 
-### Executar em desenvolvimento
-```bash
-npm run dev
-# ou
-pnpm dev
-```
+* Gamificação real com níveis e XP
+* Notificações inteligentes com IA
+* Interface responsiva com sensação de app nativo
+* Atualização otimista para melhor UX
+* PWA completo com suporte offline
+* Sistema de penalidades motivacional
 
-Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
+---
 
-## 📱 Como Usar
+## 📊 Métricas
 
-### 1. Primeiro Acesso
-1. Acesse a aplicação
-2. **Registre-se** com nome, email e senha
-3. **Faça login** com suas credenciais
+* Taxa de conclusão de tarefas
+* Produtividade diária/semanal
+* Progresso de nível
+* Sequências mantidas
+* Engajamento com notificações
 
-### 2. Dashboard
-- Visualize suas **estatísticas** (nível, XP, sequência)
-- Veja suas **tarefas recentes**
-- Acompanhe sua **produtividade**
+---
 
-### 3. Gerenciar Tarefas
-1. Vá para a seção **"Tarefas"**
-2. Use os **filtros** para organizar (status, categorias, tags)
-3. **Crie nova tarefa** com o botão "+"
-4. **Configure** nome, descrição, pontos XP, prazo, categorias e tags
-5. **Marque como concluída** para ganhar XP
-6. **Adie tarefas** se necessário (com penalidade)
+## 🧠 Considerações Finais
 
-### 4. Sistema de Pontos
-- **Ganhe XP** completando tarefas
-- **Suba de nível** acumulando XP
-- **Mantenha sequências** completando tarefas todos os dias
-- **Cuidado com penalidades** ao adiar tarefas
-
-### 5. Organização
-- Use **categorias** para agrupar tarefas por tipo
-- Use **tags** para marcação rápida
-- **Filtre e busque** tarefas facilmente
-- **Categorize** suas tarefas por prioridade e contexto
-
-## 🔧 Scripts Disponíveis
-
-```bash
-# Desenvolvimento
-npm run dev
-
-# Build para produção
-npm run build
-
-# Executar produção
-npm start
-
-# Linting
-npm run lint
-
-# Testes
-npm run test
-npm run test:watch
-npm run test:coverage
-```
-
-## 📚 Documentação da API
-
-A documentação completa da API está disponível no arquivo `API.md`, incluindo:
-- Endpoints de autenticação
-- Endpoints de tarefas
-- Endpoints de categorias e tags
-- Exemplos de payloads e respostas
-- Códigos de erro
-
-## 🎯 Funcionalidades Futuras
-
-- [ ] **Calendário integrado** com visualização de prazos
-- [ ] **Notificações push** para lembretes
-- [ ] **Relatórios** de produtividade
-- [ ] **Conquistas e badges** para gamificação
-- [ ] **Compartilhamento** de tarefas entre usuários
-- [ ] **Modo offline** com sincronização
-- [ ] **Exportação** de dados para CSV/PDF
-- [ ] **Temas personalizáveis**
-
-## 🤝 Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📝 Licença
-
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
-## 🙏 Agradecimentos
-
-- [Shadcn/UI](https://ui.shadcn.com/) - Componentes de interface
-- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
-- [Framer Motion](https://www.framer.com/motion/) - Animações
-- [Lucide React](https://lucide.dev/) - Ícones
+O **Routina** combina produtividade, gamificação e inteligência artificial para criar uma experiência de gerenciamento de tarefas verdadeiramente envolvente, com foco especial em usuários com TDAH e pessoas que enfrentam dificuldades com procrastinação. É mais do que um app de tarefas: é uma ferramenta de evolução pessoal.
